@@ -409,7 +409,7 @@ export default function LiveInspectionScanner() {
                     Executing Tesseract OCR & Rule Engine...
                   </p>
                   <p className="text-zinc-500 text-xs mt-1 font-mono">
-                    POST {process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/analyze
+                    POST {process.env.NEXT_PUBLIC_API_URL || "https://legal-metrology-backend-dhto.onrender.com/api/v1"}/analyze
                   </p>
                 </div>
               )}

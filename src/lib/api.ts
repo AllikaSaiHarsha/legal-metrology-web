@@ -24,7 +24,7 @@ export interface AnalysisResult {
 }
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://legal-metrology-backend-dhto.onrender.com/api/v1";
 
 /**
  * Upload and analyze a product package image using the Python FastAPI OCR & Rule Engine.
