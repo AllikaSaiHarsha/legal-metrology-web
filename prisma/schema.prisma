@@ -1,0 +1,114 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          String    @default("inspector")
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id               String       @id
+  name             String
+  category         String
+  manufacturer     String
+  mfgDate          String
+  expiryDate       String
+  batchNo          String
+  netQuantity      String
+  mrp              Float
+  complianceStatus String
+  createdAt        DateTime     @default(now())
+
+  inspection       Inspection?  
+}
+
+model Inspection {
+  id              String       @id
+  productId       String       @unique
+  inspector       String
+  date            String
+  location        String
+  status          String
+  imageUrl        String
+  complianceScore Int
+  createdAt       DateTime     @default(now())
+
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  violations      Violation[]
+  detections      Detection[]
+}
+
+model Violation {
+  id           String      @id
+  inspectionId String
+  ruleCode     String
+  ruleTitle    String
+  description  String
+  severity     String
+  remediation  String
+  status       String
+  createdAt    DateTime    @default(now())
+
+  inspection   Inspection  @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+}
+
+model Detection {
+  id           String      @id @default(cuid())
+  inspectionId String
+  category     String?
+  label        String
+  status       String
+  boxX         Float
+  boxY         Float
+  boxWidth     Float
+  boxHeight    Float
+
+  inspection   Inspection  @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+}

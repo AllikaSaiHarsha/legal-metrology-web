@@ -1,0 +1,480 @@
+{
+  "products": [
+    {
+      "id": "PRD-001",
+      "name": "Tata Salt",
+      "category": "Food",
+      "manufacturer": "Tata Consumer Products",
+      "mfgDate": "2024-01-15",
+      "expiryDate": "2026-01-14",
+      "batchNo": "TS-24-001",
+      "netQuantity": "1 kg",
+      "mrp": 25.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-002",
+      "name": "Amul Butter",
+      "category": "Food",
+      "manufacturer": "GCMMF",
+      "mfgDate": "2024-02-10",
+      "expiryDate": "2024-08-09",
+      "batchNo": "AM-24-042",
+      "netQuantity": "500 g",
+      "mrp": 275.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-003",
+      "name": "Britannia Marie Gold",
+      "category": "Food",
+      "manufacturer": "Britannia Industries",
+      "mfgDate": "2024-03-05",
+      "expiryDate": "2024-09-04",
+      "batchNo": "BR-24-112",
+      "netQuantity": "250 g",
+      "mrp": 30.00,
+      "complianceStatus": "non-compliant"
+    },
+    {
+      "id": "PRD-004",
+      "name": "Parle-G Biscuits",
+      "category": "Food",
+      "manufacturer": "Parle Products",
+      "mfgDate": "2024-04-20",
+      "expiryDate": "2024-10-19",
+      "batchNo": "PG-24-089",
+      "netQuantity": "800 g",
+      "mrp": 75.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-005",
+      "name": "Haldiram's Namkeen",
+      "category": "Food",
+      "manufacturer": "Haldiram's",
+      "mfgDate": "2024-05-12",
+      "expiryDate": "2024-11-11",
+      "batchNo": "HL-24-204",
+      "netQuantity": "400 g",
+      "mrp": 90.00,
+      "complianceStatus": "pending"
+    },
+    {
+      "id": "PRD-006",
+      "name": "Dabur Honey",
+      "category": "Food",
+      "manufacturer": "Dabur India",
+      "mfgDate": "2024-01-25",
+      "expiryDate": "2025-07-24",
+      "batchNo": "DB-24-055",
+      "netQuantity": "500 g",
+      "mrp": 199.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-007",
+      "name": "Fortune Sunflower Oil",
+      "category": "Food",
+      "manufacturer": "Adani Wilmar",
+      "mfgDate": "2024-02-28",
+      "expiryDate": "2025-02-27",
+      "batchNo": "FT-24-128",
+      "netQuantity": "1 L",
+      "mrp": 160.00,
+      "complianceStatus": "non-compliant"
+    },
+    {
+      "id": "PRD-008",
+      "name": "Nestle Maggi Noodles",
+      "category": "Food",
+      "manufacturer": "Nestle India",
+      "mfgDate": "2024-06-01",
+      "expiryDate": "2025-03-01",
+      "batchNo": "MG-24-301",
+      "netQuantity": "70 g",
+      "mrp": 14.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-009",
+      "name": "Cadbury Dairy Milk",
+      "category": "Food",
+      "manufacturer": "Mondelez India",
+      "mfgDate": "2024-04-15",
+      "expiryDate": "2025-01-14",
+      "batchNo": "CD-24-077",
+      "netQuantity": "50 g",
+      "mrp": 40.00,
+      "complianceStatus": "pending"
+    },
+    {
+      "id": "PRD-010",
+      "name": "Surf Excel Detergent",
+      "category": "Household",
+      "manufacturer": "Hindustan Unilever",
+      "mfgDate": "2024-03-10",
+      "expiryDate": "2026-03-09",
+      "batchNo": "SE-24-412",
+      "netQuantity": "1 kg",
+      "mrp": 210.00,
+      "complianceStatus": "compliant"
+    },
+    {
+      "id": "PRD-011",
+      "name": "Colgate Toothpaste",
+      "category": "Personal Care",
+      "manufacturer": "Colgate-Palmolive India",
+      "mfgDate": "2024-05-20",
+      "expiryDate": "2026-05-19",
+      "batchNo": "CG-24-156",
+      "netQuantity": "200 g",
+      "mrp": 110.00,
+      "complianceStatus": "non-compliant"
+    },
+    {
+      "id": "PRD-012",
+      "name": "Hindustan Unilever Fair & Lovely",
+      "category": "Personal Care",
+      "manufacturer": "Hindustan Unilever",
+      "mfgDate": "2024-02-15",
+      "expiryDate": "2026-02-14",
+      "batchNo": "FL-24-033",
+      "netQuantity": "50 g",
+      "mrp": 125.00,
+      "complianceStatus": "compliant"
+    }
+  ],
+  "inspections": [
+    {
+      "id": "INS-001",
+      "productId": "PRD-003",
+      "inspector": "Rajesh Kumar",
+      "date": "2024-06-15",
+      "location": "Mumbai",
+      "status": "completed",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Net quantity declaration font size is below minimum requirement.",
+        "Consumer helpline number is missing."
+      ]
+    },
+    {
+      "id": "INS-002",
+      "productId": "PRD-001",
+      "inspector": "Anita Sharma",
+      "date": "2024-06-18",
+      "location": "Delhi",
+      "status": "completed",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "All declarations are clear and visible.",
+        "MRP is correctly formatted."
+      ]
+    },
+    {
+      "id": "INS-003",
+      "productId": "PRD-007",
+      "inspector": "Vikram Singh",
+      "date": "2024-07-02",
+      "location": "Chennai",
+      "status": "completed",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Manufacturing date is smudged and unreadable.",
+        "Unit sale price is not declared."
+      ]
+    },
+    {
+      "id": "INS-004",
+      "productId": "PRD-005",
+      "inspector": "Priya Patel",
+      "date": "2024-07-10",
+      "location": "Ahmedabad",
+      "status": "in-progress",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Awaiting laboratory weight measurement verification."
+      ]
+    },
+    {
+      "id": "INS-005",
+      "productId": "PRD-011",
+      "inspector": "Suresh Reddy",
+      "date": "2024-07-15",
+      "location": "Hyderabad",
+      "status": "completed",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Generic name of the product is not prominently displayed."
+      ]
+    },
+    {
+      "id": "INS-006",
+      "productId": "PRD-010",
+      "inspector": "Amit Desai",
+      "date": "2024-07-22",
+      "location": "Pune",
+      "status": "scheduled",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": []
+    },
+    {
+      "id": "INS-007",
+      "productId": "PRD-009",
+      "inspector": "Kavita Iyer",
+      "date": "2024-08-05",
+      "location": "Bengaluru",
+      "status": "in-progress",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Initial check shows MRP declaration format may be incorrect."
+      ]
+    },
+    {
+      "id": "INS-008",
+      "productId": "PRD-004",
+      "inspector": "Rahul Gupta",
+      "date": "2024-08-12",
+      "location": "Kolkata",
+      "status": "completed",
+      "imageUrl": "/placeholder-label.jpg",
+      "findings": [
+        "Complies with all labeling requirements."
+      ]
+    }
+  ],
+  "violations": [
+    {
+      "id": "VIO-001",
+      "inspectionId": "INS-001",
+      "ruleCode": "LM-R101",
+      "ruleTitle": "Net Quantity Declaration",
+      "description": "The net quantity declaration font size is 2mm, which is below the required minimum of 4mm for the principal display panel area.",
+      "severity": "major",
+      "remediation": "Redesign label to increase net quantity font size to at least 4mm.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-002",
+      "inspectionId": "INS-001",
+      "ruleCode": "LM-R107",
+      "ruleTitle": "Consumer Helpline",
+      "description": "Consumer helpline contact number and email are entirely missing from the packaging.",
+      "severity": "critical",
+      "remediation": "Update packaging to clearly display consumer care cell contact details.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-003",
+      "inspectionId": "INS-003",
+      "ruleCode": "LM-R103",
+      "ruleTitle": "Manufacturing Date",
+      "description": "The manufacturing date printed on the bottom of the bottle is smudged and illegible.",
+      "severity": "major",
+      "remediation": "Improve printing process for batch coding to ensure legibility.",
+      "status": "under-review"
+    },
+    {
+      "id": "VIO-004",
+      "inspectionId": "INS-003",
+      "ruleCode": "LM-R108",
+      "ruleTitle": "Unit Sale Price",
+      "description": "Unit sale price per liter is not declared on the package alongside the MRP.",
+      "severity": "major",
+      "remediation": "Include unit sale price declaration (e.g., 'Rs. 160.00 per L') on the label.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-005",
+      "inspectionId": "INS-005",
+      "ruleCode": "LM-R109",
+      "ruleTitle": "Generic Name Declaration",
+      "description": "The generic name of the product is missing. Only the brand name is displayed.",
+      "severity": "minor",
+      "remediation": "Add generic name 'Toothpaste' on the principal display panel.",
+      "status": "resolved"
+    },
+    {
+      "id": "VIO-006",
+      "inspectionId": "INS-002",
+      "ruleCode": "LM-R101",
+      "ruleTitle": "Net Quantity Declaration",
+      "description": "Net quantity is not declared in the prescribed SI units.",
+      "severity": "major",
+      "remediation": "Use standard SI abbreviations like 'g' or 'kg' without periods.",
+      "status": "resolved"
+    },
+    {
+      "id": "VIO-007",
+      "inspectionId": "INS-004",
+      "ruleCode": "LM-R102",
+      "ruleTitle": "MRP Declaration",
+      "description": "MRP includes taxes but phrase 'Inclusive of all taxes' is missing.",
+      "severity": "minor",
+      "remediation": "Append '(incl. of all taxes)' to the MRP declaration.",
+      "status": "under-review"
+    },
+    {
+      "id": "VIO-008",
+      "inspectionId": "INS-007",
+      "ruleCode": "LM-R102",
+      "ruleTitle": "MRP Declaration",
+      "description": "MRP is obscured by a retail sticker.",
+      "severity": "minor",
+      "remediation": "Instruct retailers not to obscure mandated declarations.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-009",
+      "inspectionId": "INS-005",
+      "ruleCode": "LM-R105",
+      "ruleTitle": "Name and Address of Manufacturer",
+      "description": "Manufacturer address is incomplete; pin code is missing.",
+      "severity": "major",
+      "remediation": "Provide full and complete registered address including pin code.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-010",
+      "inspectionId": "INS-008",
+      "ruleCode": "LM-R106",
+      "ruleTitle": "Country of Origin",
+      "description": "Country of origin is not explicitly stated for imported components.",
+      "severity": "major",
+      "remediation": "Declare 'Manufactured in India' or specify origin if imported.",
+      "status": "resolved"
+    },
+    {
+      "id": "VIO-011",
+      "inspectionId": "INS-001",
+      "ruleCode": "LM-R104",
+      "ruleTitle": "Best Before Date",
+      "description": "Best before date format is confusing.",
+      "severity": "minor",
+      "remediation": "Use standard format like 'Best before X months from manufacture'.",
+      "status": "resolved"
+    },
+    {
+      "id": "VIO-012",
+      "inspectionId": "INS-003",
+      "ruleCode": "LM-R110",
+      "ruleTitle": "Principal Display Panel Area",
+      "description": "Declarations occupy less than 40% of the principal display panel.",
+      "severity": "major",
+      "remediation": "Increase the size of the declaration block on the package.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-013",
+      "inspectionId": "INS-005",
+      "ruleCode": "LM-R111",
+      "ruleTitle": "Language of Declarations",
+      "description": "Declarations are not in English or Hindi in Devnagri script.",
+      "severity": "critical",
+      "remediation": "Translate mandatory declarations to English or Hindi.",
+      "status": "under-review"
+    },
+    {
+      "id": "VIO-014",
+      "inspectionId": "INS-007",
+      "ruleCode": "LM-R112",
+      "ruleTitle": "Multiple MRPs",
+      "description": "Two different MRPs are visible on the package.",
+      "severity": "critical",
+      "remediation": "Ensure only one clear MRP is printed; obliterate any old prints completely.",
+      "status": "open"
+    },
+    {
+      "id": "VIO-015",
+      "inspectionId": "INS-004",
+      "ruleCode": "LM-R113",
+      "ruleTitle": "Deceptive Packaging",
+      "description": "Packaging size is misleadingly large compared to the actual net quantity.",
+      "severity": "major",
+      "remediation": "Redesign packaging to accurately reflect product volume.",
+      "status": "open"
+    }
+  ],
+  "kpiStats": {
+    "totalInspections": 1247,
+    "complianceRate": 87.3,
+    "activeViolations": 42,
+    "pendingAudits": 18,
+    "trend": {
+      "totalInspections": 12.5,
+      "complianceRate": 3.2,
+      "activeViolations": -8.1,
+      "pendingAudits": -5.3
+    }
+  },
+  "monthlyTrend": [
+    { "month": "Jan", "inspections": 85, "violations": 15, "complianceRate": 82 },
+    { "month": "Feb", "inspections": 92, "violations": 18, "complianceRate": 80 },
+    { "month": "Mar", "inspections": 110, "violations": 25, "complianceRate": 77 },
+    { "month": "Apr", "inspections": 105, "violations": 20, "complianceRate": 81 },
+    { "month": "May", "inspections": 125, "violations": 16, "complianceRate": 87 },
+    { "month": "Jun", "inspections": 130, "violations": 12, "complianceRate": 91 },
+    { "month": "Jul", "inspections": 145, "violations": 14, "complianceRate": 90 },
+    { "month": "Aug", "inspections": 150, "violations": 10, "complianceRate": 93 },
+    { "month": "Sep", "inspections": 140, "violations": 11, "complianceRate": 92 },
+    { "month": "Oct", "inspections": 135, "violations": 13, "complianceRate": 90 },
+    { "month": "Nov", "inspections": 120, "violations": 15, "complianceRate": 87 },
+    { "month": "Dec", "inspections": 110, "violations": 10, "complianceRate": 91 }
+  ],
+  "violationsByCategory": [
+    { "category": "MRP Declaration", "count": 145 },
+    { "category": "Net Quantity", "count": 98 },
+    { "category": "Date Marking", "count": 85 },
+    { "category": "Labeling", "count": 72 },
+    { "category": "Weight & Measure", "count": 45 },
+    { "category": "Packaging", "count": 28 }
+  ],
+  "recentInspections": [
+    {
+      "id": "INS-001",
+      "product": "Britannia Marie Gold",
+      "inspector": "Rajesh Kumar",
+      "date": "2024-06-15",
+      "location": "Mumbai",
+      "status": "completed",
+      "complianceScore": 65
+    },
+    {
+      "id": "INS-002",
+      "product": "Tata Salt",
+      "inspector": "Anita Sharma",
+      "date": "2024-06-18",
+      "location": "Delhi",
+      "status": "completed",
+      "complianceScore": 100
+    },
+    {
+      "id": "INS-003",
+      "product": "Fortune Sunflower Oil",
+      "inspector": "Vikram Singh",
+      "date": "2024-07-02",
+      "location": "Chennai",
+      "status": "completed",
+      "complianceScore": 55
+    },
+    {
+      "id": "INS-004",
+      "product": "Haldiram's Namkeen",
+      "inspector": "Priya Patel",
+      "date": "2024-07-10",
+      "location": "Ahmedabad",
+      "status": "in-progress",
+      "complianceScore": 85
+    },
+    {
+      "id": "INS-005",
+      "product": "Colgate Toothpaste",
+      "inspector": "Suresh Reddy",
+      "date": "2024-07-15",
+      "location": "Hyderabad",
+      "status": "completed",
+      "complianceScore": 75
+    }
+  ]
+}
