@@ -21,15 +21,27 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // Vercel Serverless + SQLite = Read-only errors. 
-        // For the cloud prototype demo, we completely bypass the DB check
-        // and instantly authenticate anyone to let them see the dashboard.
-        
+        const email = credentials.email.toLowerCase();
+
+        let user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user || !user.password) {
+          throw new Error("User not found");
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.password || "");
+
+        if (!isValid) {
+          throw new Error("Invalid password");
+        }
+
         return {
-          id: "demo-user-123",
-          email: credentials.email.toLowerCase(),
-          name: credentials.email.split('@')[0],
-          role: "ADMIN",
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
         };
       },
     }),
