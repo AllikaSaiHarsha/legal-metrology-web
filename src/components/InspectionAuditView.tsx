@@ -20,7 +20,12 @@ import TopBar from "@/components/TopBar";
 import { AccordionCard } from "@/components/AccordionCard";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import PackageLabelMockup from "./PackageLabelMockup";
-import { Inspection, Product, Violation } from "@/lib/inspectionsStore";
+import {
+  Inspection,
+  Product,
+  Violation,
+  normalizeImageUrl,
+} from "@/lib/inspectionsStore";
 import { getImageFromIDB } from "@/lib/idb";
 
 interface InspectionAuditViewProps {
@@ -41,13 +46,15 @@ export default function InspectionAuditView({
     width: 800,
     height: 800,
   });
-  const [displayImgUrl, setDisplayImgUrl] = useState<string>(inspection.imageUrl || "");
+  const [displayImgUrl, setDisplayImgUrl] = useState<string>(
+    normalizeImageUrl(inspection.imageUrl || "")
+  );
   const [imgLoadFailed, setImgLoadFailed] = useState<boolean>(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDisplayImgUrl(inspection.imageUrl || "");
+    setDisplayImgUrl(normalizeImageUrl(inspection.imageUrl || ""));
     setImgLoadFailed(false);
 
     if (inspection.id) {
@@ -61,6 +68,13 @@ export default function InspectionAuditView({
   }, [inspection.id, inspection.imageUrl]);
 
   const handleImgError = async () => {
+    // If it's a remote URL containing /uploads/, fall back to local /uploads/
+    const match = displayImgUrl.match(/\/uploads\/([^\/\?#]+)$/);
+    if (match && displayImgUrl !== `/uploads/${match[1]}`) {
+      setDisplayImgUrl(`/uploads/${match[1]}`);
+      return;
+    }
+
     if (inspection.id && !displayImgUrl.startsWith("data:image")) {
       const idbImg = await getImageFromIDB(inspection.id);
       if (idbImg && idbImg !== displayImgUrl) {

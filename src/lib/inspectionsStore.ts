@@ -130,6 +130,17 @@ export async function hydrateImagesFromIDB(): Promise<void> {
   }
 }
 
+/** Normalize any /uploads/ URL to local root-relative path */
+export function normalizeImageUrl(url: string): string {
+  if (!url) return "";
+  if (url.startsWith("data:image") || url.startsWith("blob:")) return url;
+  const match = url.match(/\/uploads\/([^\/\?#]+)$/);
+  if (match) {
+    return `/uploads/${match[1]}`;
+  }
+  return url;
+}
+
 export function loadStore(): StoreData {
   if (typeof window === "undefined") {
     return getInitialStore();
@@ -153,7 +164,7 @@ export function loadStore(): StoreData {
       if (ins.imageUrl.startsWith("__session__") || ins.imageUrl.startsWith("__idb__")) {
         return { ...ins, imageUrl: cached || "" };
       }
-      return ins;
+      return { ...ins, imageUrl: normalizeImageUrl(ins.imageUrl) };
     });
 
     // Fire background IDB hydration if not done yet
@@ -186,6 +197,8 @@ export async function hydrateStoreFromDB(): Promise<void> {
         const cached = getCachedImage(ins.id);
         if (cached) {
           ins.imageUrl = cached;
+        } else {
+          ins.imageUrl = normalizeImageUrl(ins.imageUrl);
         }
 
         if (ins.detections) {
