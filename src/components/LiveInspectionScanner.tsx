@@ -28,10 +28,12 @@ import {
 import {
   saveScannedInspection,
   updateInspectionProduct,
+  setCachedImage,
   Inspection,
   Product,
   Violation,
 } from "@/lib/inspectionsStore";
+import { saveImageToIDB } from "@/lib/idb";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import BackendBoundingBoxViewer from "./BackendBoundingBoxViewer";
 import { AccordionCard } from "./AccordionCard";
@@ -98,33 +100,73 @@ export default function LiveInspectionScanner() {
     setProductNameInput(cleanName);
   };
 
-  const handleSaveInspection = () => {
-    if (!results || !previewUrl) return;
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) =>
+        resolve(typeof ev.target?.result === "string" ? ev.target.result : "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSaveInspection = async () => {
+    if (!results) return;
+
+    let finalImg = dataUrl;
+    if (!finalImg && selectedFile) {
+      finalImg = await fileToDataUrl(selectedFile);
+    }
+    if (!finalImg && results.image_url) {
+      finalImg = results.image_url;
+    }
+    if (!finalImg && previewUrl) {
+      finalImg = previewUrl;
+    }
 
     const saved = saveScannedInspection({
       productName: productNameInput || "Scanned Commodity",
       manufacturer: manufacturerInput || "Per Packaging Label",
       detections: results.detections,
-      imageUrl: dataUrl || previewUrl,
+      imageUrl: finalImg || "",
     });
+
+    if (finalImg) {
+      setCachedImage(saved.inspection.id, finalImg);
+      saveImageToIDB(saved.inspection.id, finalImg);
+    }
 
     setSavedData(saved);
   };
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
     if (savedData) {
       generateInspectionPDF({
         inspection: savedData.inspection,
         product: savedData.product,
         violations: savedData.violations,
       });
-    } else if (results && previewUrl) {
+    } else if (results) {
+      let finalImg = dataUrl;
+      if (!finalImg && selectedFile) {
+        finalImg = await fileToDataUrl(selectedFile);
+      }
+      if (!finalImg && previewUrl) {
+        finalImg = previewUrl;
+      }
+
       const saved = saveScannedInspection({
         productName: productNameInput || "Scanned Commodity",
         manufacturer: manufacturerInput || "Per Packaging Label",
         detections: results.detections,
-        imageUrl: previewUrl,
+        imageUrl: finalImg || "",
       });
+
+      if (finalImg) {
+        setCachedImage(saved.inspection.id, finalImg);
+        saveImageToIDB(saved.inspection.id, finalImg);
+      }
+
       setSavedData(saved);
       generateInspectionPDF({
         inspection: saved.inspection,
@@ -180,14 +222,30 @@ export default function LiveInspectionScanner() {
       if (data.product_name) setProductNameInput(data.product_name);
       if (data.manufacturer) setManufacturerInput(data.manufacturer);
 
+      let finalImg = dataUrl;
+      if (!finalImg && selectedFile) {
+        finalImg = await fileToDataUrl(selectedFile);
+      }
+      if (!finalImg && data.image_url) {
+        finalImg = data.image_url;
+      }
+      if (!finalImg && previewUrl) {
+        finalImg = previewUrl;
+      }
+
       // Auto-store the product scan info immediately
       const saved = saveScannedInspection({
         productName: data.product_name || inferredProductName,
         manufacturer: data.manufacturer || manufacturerInput || "Per Packaging Label",
         inspectorName: session?.user?.name || undefined,
         detections: data.detections,
-        imageUrl: data.image_url || dataUrl || previewUrl || "",
+        imageUrl: finalImg || "",
       });
+
+      if (finalImg) {
+        setCachedImage(saved.inspection.id, finalImg);
+        saveImageToIDB(saved.inspection.id, finalImg);
+      }
 
       setSavedData(saved);
     } catch (err: any) {

@@ -4,7 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import InspectionAuditView from "./InspectionAuditView";
-import { getInspectionById, Inspection, Product, Violation } from "@/lib/inspectionsStore";
+import {
+  getInspectionById,
+  getInspectionImage,
+  subscribeStore,
+  Inspection,
+  Product,
+  Violation,
+} from "@/lib/inspectionsStore";
 
 interface Props {
   id: string;
@@ -26,15 +33,47 @@ export default function InspectionDetailResolver({
   }>({ violations: [] });
 
   useEffect(() => {
-    if (initialInspection && initialProduct) {
-      setData({
-        inspection: initialInspection,
-        product: initialProduct,
-        violations: initialViolations || [],
-      });
-    } else {
-      setData(getInspectionById(id));
-    }
+    let isCurrent = true;
+
+    const resolveAndEnhance = async () => {
+      let currentData =
+        initialInspection && initialProduct
+          ? {
+              inspection: initialInspection,
+              product: initialProduct,
+              violations: initialViolations || [],
+            }
+          : getInspectionById(id);
+
+      // Check if there is an IndexedDB or local memory image for this inspection
+      if (currentData.inspection?.id) {
+        const localImg = await getInspectionImage(currentData.inspection.id);
+        if (localImg && isCurrent) {
+          currentData = {
+            ...currentData,
+            inspection: {
+              ...currentData.inspection,
+              imageUrl: localImg,
+            },
+          };
+        }
+      }
+
+      if (isCurrent) {
+        setData(currentData);
+      }
+    };
+
+    resolveAndEnhance();
+
+    const unsubscribe = subscribeStore(() => {
+      resolveAndEnhance();
+    });
+
+    return () => {
+      isCurrent = false;
+      unsubscribe();
+    };
   }, [id, initialInspection, initialProduct, initialViolations]);
 
   if (!data.inspection || !data.product) {

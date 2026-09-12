@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileCheck,
@@ -21,6 +21,7 @@ import { AccordionCard } from "@/components/AccordionCard";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import PackageLabelMockup from "./PackageLabelMockup";
 import { Inspection, Product, Violation } from "@/lib/inspectionsStore";
+import { getImageFromIDB } from "@/lib/idb";
 
 interface InspectionAuditViewProps {
   inspection: Inspection;
@@ -40,13 +41,43 @@ export default function InspectionAuditView({
     width: 800,
     height: 800,
   });
+  const [displayImgUrl, setDisplayImgUrl] = useState<string>(inspection.imageUrl || "");
+  const [imgLoadFailed, setImgLoadFailed] = useState<boolean>(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setDisplayImgUrl(inspection.imageUrl || "");
+    setImgLoadFailed(false);
+
+    if (inspection.id) {
+      getImageFromIDB(inspection.id).then((idbImg) => {
+        if (idbImg) {
+          setDisplayImgUrl(idbImg);
+          setImgLoadFailed(false);
+        }
+      });
+    }
+  }, [inspection.id, inspection.imageUrl]);
+
+  const handleImgError = async () => {
+    if (inspection.id && !displayImgUrl.startsWith("data:image")) {
+      const idbImg = await getImageFromIDB(inspection.id);
+      if (idbImg && idbImg !== displayImgUrl) {
+        setDisplayImgUrl(idbImg);
+        return;
+      }
+    }
+    setImgLoadFailed(true);
+  };
+
   const isRealUploadedImage =
-    inspection.imageUrl &&
-    inspection.imageUrl.trim().length > 0 &&
-    !inspection.imageUrl.includes("placeholder-label");
+    !imgLoadFailed &&
+    Boolean(displayImgUrl) &&
+    displayImgUrl.trim().length > 0 &&
+    !displayImgUrl.includes("placeholder-label") &&
+    !displayImgUrl.startsWith("__idb__") &&
+    !displayImgUrl.startsWith("__session__");
 
   // Extract or synthesize bounding boxes for the 5 Legal Metrology categories
   const hasLiveDetections =
@@ -246,7 +277,7 @@ export default function InspectionAuditView({
                 {isRealUploadedImage ? (
                   <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900">
                     <img
-                      src={inspection.imageUrl}
+                      src={displayImgUrl}
                       alt={product.name}
                       onLoad={(e) => {
                         setNaturalSize({
@@ -254,6 +285,7 @@ export default function InspectionAuditView({
                           height: e.currentTarget.naturalHeight || 800,
                         });
                       }}
+                      onError={handleImgError}
                       className="max-h-[580px] w-auto object-contain block select-none"
                     />
 
@@ -302,8 +334,14 @@ export default function InspectionAuditView({
                       })}
                   </div>
                 ) : (
-                  /* High-Fidelity Package Label Canvas for Seeded Inspections */
+                  /* High-Fidelity Package Label Canvas for Seeded Inspections / Fallback */
                   <div className="relative w-[420px]">
+                    {imgLoadFailed && (
+                      <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2.5 shadow-lg">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Remote photo snapshot expired • Displaying high-fidelity digital statutory reconstruction</span>
+                      </div>
+                    )}
                     <PackageLabelMockup
                       product={product}
                       inspection={inspection}

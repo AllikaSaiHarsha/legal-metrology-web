@@ -1,6 +1,12 @@
 "use client";
 
 import { Detection } from "@/lib/api";
+import {
+  saveImageToIDB,
+  getImageFromIDB,
+  getAllImagesFromIDB,
+  deleteImageFromIDB,
+} from "@/lib/idb";
 
 export interface Product {
   id: string;
@@ -57,6 +63,12 @@ export interface StoreData {
 
 const STORAGE_KEY = "legal_metrology_inspections_data_v2";
 const EVENT_NAME = "legal-metrology-store-update";
+const IMAGE_PREFIX = "lm_img_";
+
+// Fast in-memory cache for large base64/blob images
+const memoryImageCache = new Map<string, string>();
+let isIDBHydrating = false;
+let hasHydratedIDB = false;
 
 function getInitialStore(): StoreData {
   return {
@@ -64,6 +76,58 @@ function getInitialStore(): StoreData {
     inspections: [],
     violations: [],
   };
+}
+
+/** Save an image across Memory, SessionStorage, and IndexedDB. */
+export function setCachedImage(id: string, imageUrl: string): void {
+  if (!id || !imageUrl) return;
+  memoryImageCache.set(id, imageUrl);
+  saveImageToSession(id, imageUrl);
+  saveImageToIDB(id, imageUrl);
+}
+
+/** Synchronous lookup from memory cache or session storage. */
+export function getCachedImage(id: string): string {
+  if (!id) return "";
+  return memoryImageCache.get(id) || getImageFromSession(id) || "";
+}
+
+/** Retrieve image asynchronously from IndexedDB if not in memory. */
+export async function getInspectionImage(id: string): Promise<string> {
+  const sync = getCachedImage(id);
+  if (sync) return sync;
+  const idb = await getImageFromIDB(id);
+  if (idb) {
+    memoryImageCache.set(id, idb);
+    saveImageToSession(id, idb);
+    return idb;
+  }
+  return "";
+}
+
+/** Asynchronously hydrate in-memory cache with all images from IndexedDB. */
+export async function hydrateImagesFromIDB(): Promise<void> {
+  if (typeof window === "undefined" || isIDBHydrating || hasHydratedIDB) return;
+  isIDBHydrating = true;
+  try {
+    const allImages = await getAllImagesFromIDB();
+    let updatedAny = false;
+    for (const [id, url] of Object.entries(allImages)) {
+      if (url && !memoryImageCache.has(id)) {
+        memoryImageCache.set(id, url);
+        saveImageToSession(id, url);
+        updatedAny = true;
+      }
+    }
+    hasHydratedIDB = true;
+    if (updatedAny) {
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: loadStore() }));
+    }
+  } catch (err) {
+    console.warn("Failed to hydrate images from IDB:", err);
+  } finally {
+    isIDBHydrating = false;
+  }
 }
 
 export function loadStore(): StoreData {
@@ -78,7 +142,26 @@ export function loadStore(): StoreData {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
       return initial;
     }
-    return JSON.parse(raw);
+    const parsed: StoreData = JSON.parse(raw);
+
+    // Re-attach images from memory or sessionStorage where available
+    parsed.inspections = parsed.inspections.map((ins) => {
+      const cached = getCachedImage(ins.id);
+      if (cached) {
+        return { ...ins, imageUrl: cached };
+      }
+      if (ins.imageUrl.startsWith("__session__") || ins.imageUrl.startsWith("__idb__")) {
+        return { ...ins, imageUrl: cached || "" };
+      }
+      return ins;
+    });
+
+    // Fire background IDB hydration if not done yet
+    if (!hasHydratedIDB && !isIDBHydrating) {
+      setTimeout(() => hydrateImagesFromIDB(), 10);
+    }
+
+    return parsed;
   } catch (err) {
     return getInitialStore();
   }
@@ -99,6 +182,12 @@ export async function hydrateStoreFromDB(): Promise<void> {
       };
       // Format the detections back into the nested shape the UI expects
       newStore.inspections.forEach((ins: any) => {
+        // Re-attach local high-resolution cached image if available
+        const cached = getCachedImage(ins.id);
+        if (cached) {
+          ins.imageUrl = cached;
+        }
+
         if (ins.detections) {
           ins.detections = ins.detections.map((d: any) => ({
             category: d.category,
@@ -113,8 +202,7 @@ export async function hydrateStoreFromDB(): Promise<void> {
           }));
         }
       });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
-      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: newStore }));
+      saveStore(newStore);
       hasFetchedFromDB = true;
     }
   } catch (err) {
@@ -122,35 +210,71 @@ export async function hydrateStoreFromDB(): Promise<void> {
   }
 }
 
+/** Save a base64 image for a specific inspection ID into sessionStorage. */
+function saveImageToSession(inspectionId: string, imageUrl: string): void {
+  if (typeof window === "undefined") return;
+  if (!imageUrl || !imageUrl.startsWith("data:image")) return;
+  try {
+    sessionStorage.setItem(`${IMAGE_PREFIX}${inspectionId}`, imageUrl);
+  } catch {
+    // sessionStorage quota reached
+  }
+}
+
+/** Retrieve a base64 image for an inspection from sessionStorage. */
+export function getImageFromSession(inspectionId: string): string {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem(`${IMAGE_PREFIX}${inspectionId}`) || "";
+}
+
 export function saveStore(data: StoreData): void {
   if (typeof window === "undefined") return;
+
+  // Persist images to Memory, SessionStorage, and IndexedDB
+  const slimInspections = data.inspections.map((ins) => {
+    const isLarge =
+      ins.imageUrl &&
+      (ins.imageUrl.startsWith("data:image") || ins.imageUrl.startsWith("blob:") || ins.imageUrl.length > 500);
+
+    if (isLarge) {
+      setCachedImage(ins.id, ins.imageUrl);
+      return { ...ins, imageUrl: `__idb__${ins.id}` };
+    }
+
+    if (ins.imageUrl.startsWith("__idb__") || ins.imageUrl.startsWith("__session__")) {
+      const cached = getCachedImage(ins.id);
+      if (cached) {
+        saveImageToIDB(ins.id, cached);
+      }
+      return ins;
+    }
+
+    return ins;
+  });
+
+  const slimData: StoreData = { ...data, inspections: slimInspections };
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: data }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(slimData));
+    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: loadStore() }));
   } catch (err) {
-    console.warn("localStorage quota exceeded (image too large). Stripping images to save data...");
-    
-    // Fallback: Strip the massive Base64 strings from inspections to save space, 
-    // but keep the short http/blob URLs!
-    const slimData: StoreData = {
-      ...data,
-      inspections: data.inspections.map(ins => {
-        const isMassiveBase64 = ins.imageUrl.startsWith("data:image") && ins.imageUrl.length > 1000;
-        return {
-          ...ins,
-          imageUrl: isMassiveBase64 ? "" : ins.imageUrl
-        };
-      })
-    };
-    
+    console.warn("localStorage quota exceeded even with slim items.", err);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(slimData));
-      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: slimData }));
+      const barebonesData: StoreData = {
+        ...slimData,
+        inspections: slimInspections.map((ins) => ({
+          ...ins,
+          imageUrl: `__idb__${ins.id}`,
+        })),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(barebonesData));
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: loadStore() }));
     } catch (fallbackErr) {
-      console.error("Critical failure: Could not save even slim data.", fallbackErr);
+      console.error("Critical failure: Could not save store.", fallbackErr);
     }
   }
 }
+
 
 export function subscribeStore(callback: (data: StoreData) => void): () => void {
   if (typeof window === "undefined") return () => {};
@@ -367,6 +491,14 @@ export function deleteInspection(inspectionId: string): void {
     // Remove all associated violations
     store.violations = store.violations.filter(v => v.inspectionId !== inspectionId);
     
+    memoryImageCache.delete(inspectionId);
+    deleteImageFromIDB(inspectionId);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem(`${IMAGE_PREFIX}${inspectionId}`);
+      } catch {}
+    }
+
     saveStore(store);
 
     // Background sync to real DB
