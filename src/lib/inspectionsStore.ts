@@ -203,9 +203,14 @@ export async function hydrateStoreFromDB(): Promise<void> {
 
         if (ins.detections) {
           ins.detections = ins.detections.map((d: any) => ({
+            id: d.id,
             category: d.category,
             label: d.label,
             status: d.status,
+            boxX: d.boxX,
+            boxY: d.boxY,
+            boxWidth: d.boxWidth,
+            boxHeight: d.boxHeight,
             box: {
               x: d.boxX,
               y: d.boxY,

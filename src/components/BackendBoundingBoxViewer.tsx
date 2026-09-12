@@ -34,13 +34,13 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
         />
 
         <div
-          className="relative transition-transform duration-200 ease-out inline-block max-h-[560px]"
+          className="relative transition-transform duration-200 ease-out inline-block w-fit h-fit max-h-[560px]"
           style={{ transform: `scale(${zoom})` }}
         >
           <img
             src={imageUrl}
             alt="Scanned Package Label"
-            className="max-h-[540px] max-w-full w-auto object-contain rounded-xl block pointer-events-none"
+            className="max-h-[540px] max-w-full w-auto object-contain rounded-xl block pointer-events-none select-none"
           />
 
           {/* Bounding Box Overlays */}
@@ -49,12 +49,17 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
               results &&
               results.detections &&
               results.detections.map((detection, index) => {
-                const origW = results.original_width || 1;
-                const origH = results.original_height || 1;
-                const leftPercent = (detection.box.x / origW) * 100;
-                const topPercent = (detection.box.y / origH) * 100;
-                const widthPercent = (detection.box.width / origW) * 100;
-                const heightPercent = (detection.box.height / origH) * 100;
+                const box = detection.box;
+                if (!box || (box.width <= 0 && box.height <= 0) || (box.x === 0 && box.y === 0 && box.width === 0)) {
+                  return null;
+                }
+
+                const origW = results.original_width || 1000;
+                const origH = results.original_height || 1000;
+                const leftPercent = Math.max(0, Math.min(100, (box.x / origW) * 100));
+                const topPercent = Math.max(0, Math.min(100, (box.y / origH) * 100));
+                const widthPercent = Math.max(1, Math.min(100 - leftPercent, (box.width / origW) * 100));
+                const heightPercent = Math.max(1, Math.min(100 - topPercent, (box.height / origH) * 100));
 
                 const isFailed = detection.status === "Failed";
                 const isPassed = detection.status === "Passed";
@@ -71,26 +76,33 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
                   ? "bg-emerald-500/20 hover:bg-emerald-500/30"
                   : "bg-amber-500/20 hover:bg-amber-500/30";
 
+                const isNearTop = topPercent < 5;
+                const isHovered = hoveredDetection === detection;
+
                 return (
                   <motion.div
-                    key={`${detection.category || 'det'}-${detection.box.x}-${detection.box.y}-${index}`}
+                    key={`${detection.category || 'det'}-${box.x}-${box.y}-${index}`}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.25, delay: index * 0.02 }}
                     onMouseEnter={() => setHoveredDetection(detection)}
                     onMouseLeave={() => setHoveredDetection(null)}
-                    className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all duration-150 z-20 ${borderColor} ${bgColor}`}
+                    className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all duration-150 ${
+                      isHovered ? "z-30 ring-2 ring-white/60 shadow-lg" : "z-20"
+                    } ${borderColor} ${bgColor}`}
                     style={{
                       left: `${leftPercent}%`,
                       top: `${topPercent}%`,
-                      width: `${Math.max(widthPercent, 1.5)}%`,
-                      height: `${Math.max(heightPercent, 1.5)}%`,
+                      width: `${widthPercent}%`,
+                      height: `${heightPercent}%`,
                     }}
                   >
                     {/* Floating badge for box */}
                     <div
-                      className={`absolute -top-3.5 left-0 text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded shadow-sm text-white whitespace-nowrap ${
+                      className={`absolute ${
+                        isNearTop ? "top-1 left-1" : "-top-3.5 left-0"
+                      } text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded shadow-sm text-white whitespace-nowrap pointer-events-none ${
                         isFailed
                           ? "bg-rose-600"
                           : isPassed

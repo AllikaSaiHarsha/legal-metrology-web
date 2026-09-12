@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   PackageCheck,
   Layers,
+  Sparkles,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -289,7 +290,7 @@ export default function InspectionAuditView({
               >
                 {/* Real Uploaded Photo */}
                 {isRealUploadedImage ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900">
+                  <div className="relative inline-block w-fit max-w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900">
                     <img
                       src={displayImgUrl}
                       alt={product.name}
@@ -307,24 +308,47 @@ export default function InspectionAuditView({
                     {showBoxes &&
                       hasLiveDetections &&
                       inspection.detections?.map((det: any, idx) => {
-                        const boxX = det.boxX !== undefined ? det.boxX : (det.box?.x || 0);
-                        const boxY = det.boxY !== undefined ? det.boxY : (det.box?.y || 0);
-                        const boxW = det.boxWidth !== undefined ? det.boxWidth : (det.box?.width || 0);
-                        const boxH = det.boxHeight !== undefined ? det.boxHeight : (det.box?.height || 0);
+                        const boxX = det.boxX !== undefined ? det.boxX : (det.box?.x ?? 0);
+                        const boxY = det.boxY !== undefined ? det.boxY : (det.box?.y ?? 0);
+                        const boxW = det.boxWidth !== undefined ? det.boxWidth : (det.box?.width ?? 0);
+                        const boxH = det.boxHeight !== undefined ? det.boxHeight : (det.box?.height ?? 0);
 
-                        const leftPercent = (boxX / naturalSize.width) * 100;
-                        const topPercent = (boxY / naturalSize.height) * 100;
-                        const widthPercent = (boxW / naturalSize.width) * 100;
-                        const heightPercent = (boxH / naturalSize.height) * 100;
+                        // If bounding box has 0 width or height or (0,0,0,0), don't render false box
+                        if (boxW <= 0 || boxH <= 0 || (boxX === 0 && boxY === 0 && boxW === 0)) {
+                          return null;
+                        }
+
+                        // Determine coordinate scale:
+                        // 1. If any coordinate exceeds 1000, coordinates are in natural image pixels.
+                        // 2. If legacy mock (x: 50, w: 300), scale is 800.
+                        // 3. Otherwise, scale is 1000-normalized (Gemini standard 0-1000).
+                        let scaleW = 1000;
+                        let scaleH = 1000;
+                        if (boxX > 1000 || boxY > 1000 || boxW > 1000 || boxH > 1000) {
+                          scaleW = naturalSize.width || 1000;
+                          scaleH = naturalSize.height || 1000;
+                        } else if (boxX === 50 && boxW === 300) {
+                          scaleW = 800;
+                          scaleH = 800;
+                        }
+
+                        const leftPercent = Math.max(0, Math.min(100, (boxX / scaleW) * 100));
+                        const topPercent = Math.max(0, Math.min(100, (boxY / scaleH) * 100));
+                        const widthPercent = Math.max(1, Math.min(100 - leftPercent, (boxW / scaleW) * 100));
+                        const heightPercent = Math.max(1, Math.min(100 - topPercent, (boxH / scaleH) * 100));
 
                         const isPassed = det.status === "Passed";
+                        const isNearTop = topPercent < 5;
+                        const isHovered = hoveredBox === det || hoveredBox?.category === det.category;
 
                         return (
                           <div
-                            key={idx}
+                            key={det.id || idx}
                             onMouseEnter={() => setHoveredBox(det)}
                             onMouseLeave={() => setHoveredBox(null)}
-                            className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all duration-150 z-20 ${
+                            className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all duration-150 ${
+                              isHovered ? "z-30 ring-2 ring-white/60 shadow-lg" : "z-20"
+                            } ${
                               isPassed
                                 ? "border-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
                                 : "border-rose-500 bg-rose-500/15 hover:bg-rose-500/25"
@@ -332,12 +356,14 @@ export default function InspectionAuditView({
                             style={{
                               left: `${leftPercent}%`,
                               top: `${topPercent}%`,
-                              width: `${Math.max(widthPercent, 2)}%`,
-                              height: `${Math.max(heightPercent, 2)}%`,
+                              width: `${widthPercent}%`,
+                              height: `${heightPercent}%`,
                             }}
                           >
                             <div
-                              className={`absolute -top-3 left-0 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded shadow text-white whitespace-nowrap ${
+                              className={`absolute ${
+                                isNearTop ? "top-1 left-1" : "-top-3 left-0"
+                              } text-[8px] font-mono font-bold px-1.5 py-0.5 rounded shadow text-white whitespace-nowrap pointer-events-none ${
                                 isPassed ? "bg-emerald-600" : "bg-rose-600"
                               }`}
                             >
@@ -521,6 +547,57 @@ export default function InspectionAuditView({
                 </div>
               </div>
             </motion.div>
+
+            {/* Live Detected Statutory Declarations */}
+            {hasLiveDetections && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    Detected Declarations ({inspection.detections?.length})
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500">
+                    Hover to highlight on photo
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {inspection.detections?.map((det: any, idx: number) => {
+                    const isPassed = det.status === "Passed";
+                    const isHovered = hoveredBox === det || hoveredBox?.category === det.category;
+                    return (
+                      <div
+                        key={det.id || idx}
+                        onMouseEnter={() => setHoveredBox(det)}
+                        onMouseLeave={() => setHoveredBox(null)}
+                        className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isHovered
+                            ? "bg-zinc-800 border-indigo-500/50 shadow-lg shadow-indigo-500/10 scale-[1.01]"
+                            : "bg-zinc-900/60 border-white/[0.06] hover:bg-zinc-800/60"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-zinc-200">
+                            {det.category || "Declaration"}
+                          </span>
+                          <span
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                              isPassed
+                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
+                                : "bg-rose-500/15 text-rose-300 border border-rose-500/20"
+                            }`}
+                          >
+                            {det.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-400 font-mono line-clamp-2">
+                          {det.label || "No text extracted"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Checklist Section Title */}
             <div className="flex items-center justify-between">
