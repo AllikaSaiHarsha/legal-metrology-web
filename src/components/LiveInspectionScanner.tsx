@@ -249,10 +249,20 @@ export default function LiveInspectionScanner() {
 
       setSavedData(saved);
     } catch (err: any) {
-      setErrorMessage(
-        err.message ||
-          "Failed to communicate with FastAPI backend. Ensure server is active on port 8000."
-      );
+      const raw = err.message || "";
+      if (raw.includes("429") || raw.includes("RESOURCE_EXHAUSTED")) {
+        setErrorMessage(
+          "AI Inspection service is momentarily rate-limited by upstream Gemini quota. Please wait a few seconds and click 'Run Backend Analysis' again."
+        );
+      } else if (raw.includes("503") || raw.includes("UNAVAILABLE")) {
+        setErrorMessage(
+          "Gemini Vision API is temporarily handling high traffic. Please retry in a few moments."
+        );
+      } else {
+        setErrorMessage(
+          raw || "Failed to communicate with FastAPI backend. Ensure server is active."
+        );
+      }
     } finally {
       setIsScanning(false);
     }
@@ -328,7 +338,7 @@ export default function LiveInspectionScanner() {
             />
             <span>
               {backendOnline === true
-                ? "FastAPI Connected (Port 8000)"
+                ? "FastAPI Connected"
                 : backendOnline === false
                 ? "Backend Offline"
                 : "Checking Backend..."}
