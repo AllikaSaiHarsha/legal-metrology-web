@@ -206,9 +206,19 @@ export default function LiveInspectionScanner() {
     try {
       const heightVal = parseFloat(packageHeightInput);
       const data = await analyzePackageImage(
-        selectedFile, 
+        selectedFile,
         !isNaN(heightVal) && heightVal > 0 ? heightVal : undefined
       );
+
+      // Filter out Country of Origin if it is missing/failed (only required for imported goods)
+      data.detections = (data.detections || []).filter((d) => {
+        const cat = (d.category || "").toLowerCase();
+        const lbl = (d.label || "").toLowerCase();
+        const isCoO = cat.includes("country of origin") || lbl.includes("country of origin");
+        const isErr = d.status === "Failed" || lbl.includes("missing") || lbl.includes("not visible");
+        return !(isCoO && isErr);
+      });
+
       setResults(data);
 
       const inferredProductName =
@@ -275,8 +285,15 @@ export default function LiveInspectionScanner() {
     setErrorMessage(null);
   };
 
-  // Calculations from results
-  const detections = results?.detections || [];
+  // Calculations from results - ignore Country of Origin if failed/missing (only required for imported commodities)
+  const rawDetections = results?.detections || [];
+  const detections = rawDetections.filter((d) => {
+    const cat = (d.category || "").toLowerCase();
+    const lbl = (d.label || "").toLowerCase();
+    const isCoO = cat.includes("country of origin") || lbl.includes("country of origin");
+    const isErr = d.status === "Failed" || lbl.includes("missing") || lbl.includes("not visible");
+    return !(isCoO && isErr);
+  });
   const passedCount = detections.filter((d) => d.status === "Passed").length;
   const failedCount = detections.filter((d) => d.status === "Failed").length;
   const pendingCount = detections.filter(
@@ -745,12 +762,8 @@ export default function LiveInspectionScanner() {
                               ? "Mandatory declaration under Legal Metrology (Packaged Commodities) Rules, 2011"
                               : undefined
                           }
-                          remediation={
-                            isFailed
-                              ? "Ensure declaration is clearly printed, legible, and includes all mandatory statutory notices."
-                              : undefined
-                          }
-                          defaultOpen={index === 0}
+                          remediation={undefined}
+                          defaultOpen={false}
                         />
                       );
                     })

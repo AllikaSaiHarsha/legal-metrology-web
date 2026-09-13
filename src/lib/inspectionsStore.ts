@@ -370,9 +370,17 @@ export function saveScannedInspection(payload: SaveScannedPayload): {
   let failedCount = 0;
 
   payload.detections.forEach((det, idx) => {
-    const isPassed = det.status === "Passed";
+    const cat = (det.category || "").toLowerCase();
+    const lbl = (det.label || "").toLowerCase();
+    const isCoO = cat.includes("country of origin") || lbl.includes("country of origin");
     const isFailed = det.status === "Failed";
 
+    // Ignore Country of Origin error if failed/missing (only mandatory for imported goods)
+    if (isCoO && (isFailed || lbl.includes("missing"))) {
+      return;
+    }
+
+    const isPassed = det.status === "Passed";
     if (isPassed) passedCount++;
     if (isFailed) failedCount++;
 

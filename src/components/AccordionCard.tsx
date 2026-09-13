@@ -132,7 +132,9 @@ export function AccordionCard({
                 </div>
               )}
 
-              {remediation && status === "fail" && (
+              {remediation &&
+                status === "fail" &&
+                !remediation.includes("Ensure declaration is clearly printed") && (
                 <div className="bg-rose-500/5 rounded-xl p-3 border border-rose-500/10 mt-2">
                   <p className="text-xs font-semibold text-rose-400 mb-1">
                     Remediation Required
