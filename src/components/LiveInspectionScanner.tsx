@@ -775,7 +775,7 @@ export default function LiveInspectionScanner() {
                       No analysis performed yet
                     </p>
                     <p className="text-xs text-zinc-500 mt-1 max-w-sm">
-                      Click &ldquo;Run Backend Analysis&rdquo; to send the package to the FastAPI engine on port 8000.
+                      Click &ldquo;Run Backend Analysis&rdquo; to send the package to the Legal Metrology AI engine.
                     </p>
                   </div>
                 )}
