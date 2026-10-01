@@ -31,6 +31,7 @@ import TopBar from "@/components/TopBar";
 import { KPICard } from "@/components/KPICard";
 import { BentoCard } from "@/components/BentoCard";
 import { getDynamicDashboardStats, subscribeStore, hydrateStoreFromDB } from "@/lib/inspectionsStore";
+import { ShinyText, StarBorder, Magnet, DecryptedText, BlurText } from "@/components/reactbits";
 
 const PIE_COLORS = ['#818cf8', '#fb7185', '#fbbf24', '#34d399', '#a78bfa', '#38bdf8'];
 
@@ -93,21 +94,39 @@ export default function Dashboard() {
                 <ScanSearch className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-zinc-100">
-                  Ready to inspect a new product label?
-                </h2>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold tracking-wider">
+                    Rule 6 AI Vision
+                  </span>
+                  <ShinyText
+                    text="Ready to inspect a new product label?"
+                    color="#f4f4f5"
+                    shineColor="#818cf8"
+                    speed={3}
+                    className="text-sm font-semibold"
+                  />
+                </div>
                 <p className="text-xs text-zinc-400">
                   Upload package photos to the FastAPI OCR backend for automated Legal Metrology Rule 2011 compliance checks.
                 </p>
               </div>
             </div>
-            <Link
-              href="/scan"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <ScanSearch className="w-4 h-4" />
-              <span>Launch Live Scanner</span>
-            </Link>
+            <Magnet padding={50} magnetStrength={3}>
+              <Link href="/scan">
+                <StarBorder
+                  color="#818cf8"
+                  speed="3.5s"
+                  thickness={1.5}
+                  backgroundColor="#4f46e5"
+                  className="hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex items-center gap-2 px-4 py-2 text-white text-xs font-semibold">
+                    <ScanSearch className="w-4 h-4" />
+                    <span>Launch Live Scanner</span>
+                  </div>
+                </StarBorder>
+              </Link>
+            </Magnet>
           </div>
 
           <div className="grid grid-cols-4 gap-6">
@@ -246,8 +265,15 @@ export default function Dashboard() {
                     {recentInspections.map((inspection: any) => (
                       <tr key={inspection.id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="px-6 py-4">
-                          <Link href={`/inspection/${inspection.id}`} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                            {inspection.id}
+                          <Link href={`/inspection/${inspection.id}`} className="text-indigo-400 hover:text-indigo-300 font-mono text-xs font-semibold transition-colors">
+                            <DecryptedText
+                              text={inspection.id}
+                              speed={35}
+                              maxIterations={8}
+                              animateOn="hover"
+                              className="text-indigo-400 font-semibold"
+                              encryptedClassName="text-indigo-300/60 font-mono"
+                            />
                           </Link>
                         </td>
                         <td className="px-6 py-4 text-zinc-200">{inspection.product}</td>

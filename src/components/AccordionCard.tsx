@@ -8,6 +8,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { DecryptedText } from "@/components/reactbits";
 
 export interface AccordionCardProps {
   ruleCode: string;
@@ -63,13 +64,42 @@ export function AccordionCard({
 
   const activeStatus = statusConfig[status];
 
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [spotlightPos, setSpotlightPos] = React.useState({ x: 0, y: 0 });
+  const [spotlightOpacity, setSpotlightOpacity] = React.useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setSpotlightPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const glowColorMap = {
+    pass: "rgba(52, 211, 153, 0.12)",
+    fail: "rgba(244, 63, 94, 0.15)",
+    warning: "rgba(251, 191, 36, 0.12)",
+  };
+
   return (
     <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setSpotlightOpacity(0.9)}
+      onMouseLeave={() => setSpotlightOpacity(0)}
       layout
-      className={`rounded-2xl bg-zinc-900/50 backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-lg border-l-4 ${activeStatus.border}`}
+      className={`relative rounded-2xl bg-zinc-900/50 backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-lg border-l-4 ${activeStatus.border} hover:border-white/[0.15] transition-all`}
     >
+      {/* React Bits spotlight effect */}
       <div
-        className="p-4 cursor-pointer flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-out z-0"
+        style={{
+          opacity: spotlightOpacity,
+          background: `radial-gradient(circle 220px at ${spotlightPos.x}px ${spotlightPos.y}px, ${glowColorMap[status]}, transparent 80%)`,
+        }}
+      />
+
+      <div
+        className="relative z-10 p-4 cursor-pointer flex items-center justify-between hover:bg-white/[0.02] transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-4">
@@ -79,7 +109,14 @@ export function AccordionCard({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-mono text-zinc-400">
-                {ruleCode}
+                <DecryptedText
+                  text={ruleCode}
+                  speed={25}
+                  maxIterations={6}
+                  animateOn="hover"
+                  className="text-zinc-300 font-mono text-xs font-semibold"
+                  encryptedClassName="text-indigo-400 font-mono text-xs"
+                />
               </span>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full border ${severityConfig[severity]}`}

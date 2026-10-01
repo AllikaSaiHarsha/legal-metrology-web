@@ -38,6 +38,7 @@ import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import BackendBoundingBoxViewer from "./BackendBoundingBoxViewer";
 import { AccordionCard } from "./AccordionCard";
 import { useSession } from "next-auth/react";
+import { ShinyText, TrueFocus, StarBorder, Magnet, ClickSpark, DecryptedText } from "@/components/reactbits";
 
 export default function LiveInspectionScanner() {
   const { data: session } = useSession();
@@ -323,7 +324,7 @@ export default function LiveInspectionScanner() {
             <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
               <span>Live Package Scanner</span>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
-                Legal Metrology Rule 2011
+                <ShinyText text="Legal Metrology Rule 2011" color="#818cf8" shineColor="#ffffff" speed={3} />
               </span>
             </h2>
             <p className="text-xs text-zinc-400">
@@ -387,10 +388,15 @@ export default function LiveInspectionScanner() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-500/20 to-violet-500/20 border border-indigo-500/30 text-indigo-400 mb-4 shadow-xl shadow-indigo-500/10">
                 <ScanSearch className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-zinc-100 tracking-tight">
-                Scan Package for Compliance
-              </h3>
-              <p className="text-sm text-zinc-400 mt-1 max-w-md mx-auto">
+              <div className="flex justify-center mb-2">
+                <TrueFocus
+                  sentence="Scan Package for Compliance"
+                  borderColor="#6366f1"
+                  glowColor="rgba(99, 102, 241, 0.45)"
+                  className="text-2xl font-bold text-zinc-100"
+                />
+              </div>
+              <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
                 Upload a clear photo of the product package or commodity label. The Python FastAPI engine will perform OCR and check for all mandatory declarations.
               </p>
             </motion.div>
@@ -463,13 +469,23 @@ export default function LiveInspectionScanner() {
                       Ready for automated rule verification
                     </p>
                   </div>
-                  <button
-                    onClick={runScan}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Run Backend Analysis</span>
-                  </button>
+                  <ClickSpark sparkColor="#818cf8" sparkCount={10} sparkRadius={22}>
+                    <Magnet padding={40} magnetStrength={3}>
+                      <StarBorder
+                        color="#818cf8"
+                        speed="3s"
+                        thickness={1.5}
+                        backgroundColor="#4f46e5"
+                        onClick={runScan}
+                        className="hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 px-4 py-2 text-white text-xs font-semibold">
+                          <Sparkles className="w-4 h-4" />
+                          <ShinyText text="Run Backend Analysis" color="#ffffff" shineColor="#c7d2fe" speed={2.5} className="font-semibold" />
+                        </div>
+                      </StarBorder>
+                    </Magnet>
+                  </ClickSpark>
                 </div>
               )}
 
@@ -652,13 +668,15 @@ export default function LiveInspectionScanner() {
 
                       {/* Action Links */}
                       <div className="flex items-center gap-2 pt-1">
-                        <button
-                          onClick={handleGeneratePDF}
-                          className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.01]"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Download PDF Certificate</span>
-                        </button>
+                        <ClickSpark sparkColor="#818cf8" sparkCount={8} className="flex-1">
+                          <button
+                            onClick={handleGeneratePDF}
+                            className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.01]"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download PDF Certificate</span>
+                          </button>
+                        </ClickSpark>
 
                         <Link
                           href="/inspections"

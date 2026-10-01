@@ -23,31 +23,31 @@ const accentStyles = {
     iconBg: "bg-indigo-500/10",
     iconText: "text-indigo-400",
     iconBorder: "border-indigo-500/20",
-    glow: "#6366f1",
+    glow: "rgba(99, 102, 241, 0.25)",
   },
   emerald: {
     iconBg: "bg-emerald-500/10",
     iconText: "text-emerald-400",
     iconBorder: "border-emerald-500/20",
-    glow: "#34d399",
+    glow: "rgba(52, 211, 153, 0.25)",
   },
   rose: {
     iconBg: "bg-rose-500/10",
     iconText: "text-rose-400",
     iconBorder: "border-rose-500/20",
-    glow: "#fb7185",
+    glow: "rgba(251, 113, 133, 0.25)",
   },
   amber: {
     iconBg: "bg-amber-500/10",
     iconText: "text-amber-400",
     iconBorder: "border-amber-500/20",
-    glow: "#fbbf24",
+    glow: "rgba(251, 191, 36, 0.25)",
   },
   violet: {
     iconBg: "bg-violet-500/10",
     iconText: "text-violet-400",
     iconBorder: "border-violet-500/20",
-    glow: "#8b5cf6",
+    glow: "rgba(139, 92, 246, 0.25)",
   },
 };
 
