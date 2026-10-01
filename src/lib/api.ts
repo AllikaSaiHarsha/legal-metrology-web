@@ -65,7 +65,7 @@ export async function checkBackendHealth(): Promise<boolean> {
     const rootUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
     const response = await fetch(`${rootUrl}/openapi.json`, {
       method: "GET",
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(8000),
     });
     return response.ok;
   } catch {

@@ -271,7 +271,7 @@ export default function LiveInspectionScanner() {
         );
       } else {
         setErrorMessage(
-          raw || "Failed to communicate with FastAPI backend. Ensure server is active."
+          raw || "Failed to communicate with AI vision engine. Ensure server is reachable."
         );
       }
     } finally {
@@ -356,10 +356,10 @@ export default function LiveInspectionScanner() {
             />
             <span>
               {backendOnline === true
-                ? "FastAPI Connected"
+                ? "AI Engine Connected"
                 : backendOnline === false
-                ? "Backend Offline"
-                : "Checking Backend..."}
+                ? "AI Engine Offline"
+                : "Checking AI Engine..."}
             </span>
           </div>
 
@@ -397,7 +397,7 @@ export default function LiveInspectionScanner() {
                 />
               </div>
               <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
-                Upload a clear photo of the product package or commodity label. The Python FastAPI engine will perform OCR and check for all mandatory declarations.
+                Upload a clear photo of the product package or commodity label. The AI vision engine will perform OCR and check for all mandatory declarations.
               </p>
             </motion.div>
 
@@ -507,10 +507,10 @@ export default function LiveInspectionScanner() {
                     </motion.div>
                   </div>
                   <p className="text-zinc-200 font-semibold text-base">
-                    Executing Tesseract OCR & Rule Engine...
+                    Executing Neural Vision OCR &amp; Rule Engine...
                   </p>
                   <p className="text-zinc-500 text-xs mt-1 font-mono">
-                    POST {process.env.NEXT_PUBLIC_API_URL || "https://legal-metrology-backend-dhto.onrender.com/api/v1"}/analyze
+                    AI Spatial Localization &amp; Statutory Compliance Check
                   </p>
                 </div>
               )}
