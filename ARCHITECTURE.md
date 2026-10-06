@@ -5,38 +5,47 @@
 ---
 
 ## 1. Executive Summary
-This document outlines the software architecture, technology stack, and deployment framework for the **Automated Legal Metrology Compliance System**. The system is designed to assist enforcement officials in automatically scanning packaged commodity labels, detecting mandatory declarations, and verifying compliance against the *Legal Metrology (Packaged Commodities) Rules, 2011*.
+This document outlines the software architecture, technology stack, and deployment framework for the **Automated Legal Metrology Compliance System**. The system is designed to assist enforcement officials in automatically scanning packaged commodity labels, detecting mandatory statutory declarations, and verifying compliance against the *Legal Metrology (Packaged Commodities) Rules, 2011 (Rule 6)*.
+
+---
 
 ## 2. System Architecture Overview
-The application is built on a **modern, decoupled microservices architecture**. It separates the high-performance user interface from the computationally heavy AI/OCR processing engine.
+The application is built on a **modern, decoupled microservices architecture** that connects a high-performance executive web dashboard and mobile inspector app with a cloud-native multimodal AI vision engine.
 
 ### High-Level Flow
-1. **Input:** The enforcement official uploads a package image via the web application.
-2. **Processing (Backend):** The image is routed to the Python microservice, which utilizes a hybrid pipeline of local Optical Character Recognition (OCR) and a Large Multimodal Model (LMM).
-3. **Analysis:** Spatial bounding boxes are mapped, and text is evaluated against the 5 primary Legal Metrology rules.
-4. **Storage:** Results, compliance scores, and violations are permanently persisted in a relational database.
-5. **Output:** The official views the results on an interactive dashboard and can export them to digitally generated PDF reports.
+1. **Input:** An enforcement official captures or uploads packaging photographs via the Next.js Web Dashboard or the Expo React Native Mobile App.
+2. **Processing (Backend):** The image is routed to the Python FastAPI microservice, which applies Pillow dimension normalization and formats the payload for multimodal spatial vision inference.
+3. **AI Vision & Spatial Localization:** Google Gemini Multimodal Vision (`gemini-2.5-flash` / `gemini-3.5-flash`) extracts statutory text declarations and predicts exact normalized 2D spatial bounding boxes (`[ymin, xmin, ymax, xmax]`) directly in a single pass without local OCR overhead.
+4. **Rule Validation:** Declarations are checked against mandatory Rule 6 statutory clauses (MRP, USP, Net Weight, Manufacturer, Expiry, Customer Care, Country of Origin).
+5. **Storage:** Audit results, spatial coordinates, and compliance scores are persisted in a serverless PostgreSQL database (Neon) via Prisma ORM.
+6. **Output:** Real-time compliance feedback, interactive bounding-box overlays, and downloadable, court-admissible PDF audit certificates.
 
 ---
 
 ## 3. Technology Stack
 
-### 3.1 Frontend (User Interface & Client Logic)
-* **Framework:** Next.js 15 (React) utilizing the App Router for server-side rendering (SSR) and optimized routing.
-* **Styling:** Tailwind CSS for a responsive, accessible, and adaptive user interface.
-* **State & Data Visualization:** Recharts (for dashboard KPI visualization) and Framer Motion (for fluid bounding box overlays).
+### 3.1 Frontend (Web Dashboard)
+* **Framework:** Next.js 16 (React 19) utilizing the App Router with Turbopack.
+* **Styling & Animations:** Tailwind CSS v4, React Bits (SpotlightCard, ShinyText, DecryptedText, TrueFocus).
+* **State & Data Visualization:** Recharts (KPI visualization) and custom SVG spatial overlays for bounding boxes.
 * **Authentication:** NextAuth.js with Credentials/JWT for secure, Role-Based Access Control (RBAC).
+* **Export:** `jsPDF` & `jspdf-autotable` for automated statutory compliance certificates.
 
-### 3.2 Backend (AI & OCR Processing Engine)
-* **Framework:** FastAPI (Python) for asynchronous, high-throughput API endpoints.
-* **OCR Engine:** EasyOCR / OpenCV for spatial text localization and bounding box generation.
-* **AI Engine:** Google Gemini Vision AI for contextual extraction of entities (Product Name, Manufacturer, MRP, Net Quantity) and advanced semantic rule validation (e.g., detecting misleading date formats).
-* **Concurrency:** `asyncio` thread pooling to prevent deep-learning models from blocking the ASGI event loop.
+### 3.2 Mobile Application (Inspector App)
+* **Framework:** React Native with Expo SDK 52 (Cross-platform Android & iOS).
+* **Distribution:** Expo Application Services (EAS) Over-The-Air (OTA) updates on the `preview` channel.
+* **Hardware Integration:** `expo-image-picker` (camera/gallery) and `expo-haptics` for tactile feedback.
 
-### 3.3 Database & Storage
-* **ORM:** Prisma ORM for type-safe database querying.
-* **Database:** SQLite (Development) -> easily migratable to PostgreSQL (Production).
-* **File Storage:** Local filesystem storage for image uploads (migratable to AWS S3).
+### 3.3 Backend (AI Vision Engine)
+* **Framework:** FastAPI (Python) with Uvicorn ASGI.
+* **Vision & Text Engine:** **Google Gemini Multimodal Vision API** (`google-genai` SDK) utilizing cascading multi-key rotation and multi-model fallback (`gemini-2.5-flash`, `gemini-3.5-flash`) to eliminate `429 RESOURCE_EXHAUSTED` errors.
+* **Image Processing:** Python Pillow (PIL) for image dimension calibration and format handling.
+* **Architecture Rationale:** Pure multimodal vision replaces legacy OpenCV/Tesseract/EasyOCR pipelines, eliminating Out-Of-Memory (OOM) crashes and heavy C++ system binary dependencies on cloud containers.
+
+### 3.4 Database & Storage
+* **ORM:** Prisma ORM for type-safe database access.
+* **Database:** Serverless PostgreSQL on Neon DB with connection pooling.
+* **File Storage:** Local filesystem with public HTTP hosting, mirror-synced to Next.js static uploads.
 
 ---
 
@@ -45,75 +54,49 @@ The application is built on a **modern, decoupled microservices architecture**. 
 ```mermaid
 graph TD
     %% User Layer
-    U[Enforcement Official] -->|Uploads Package Image| UI[Next.js Web Application]
+    U[Enforcement Official / Inspector] -->|Mobile Camera Scan| M[Expo Mobile App]
+    U -->|Web Dashboard Upload| W[Next.js 16 Web Dashboard]
     
-    %% Frontend Layer
-    subgraph Frontend [Frontend - Next.js]
-        UI -->|Displays KPIs & Reports| DB_C[Prisma Client]
-        UI -->|NextAuth RBAC| AUTH[Authentication]
+    %% API Gateway Layer
+    M -->|POST /api/v1/analyze| API[FastAPI Vision Service]
+    W -->|POST /api/v1/analyze| API
+    
+    %% AI Processing Layer
+    subgraph AI_Engine [AI & Multimodal Vision Engine]
+        API -->|Normalized Buffer| GEMINI[Google Gemini Vision API]
+        GEMINI -->|Spatial Coordinates| BBOX[2D Bounding Boxes]
+        GEMINI -->|Text Extraction| TEXT[Statutory Declarations]
+        GEMINI -->|Rule 6 Verification| RULES[Compliance Engine]
     end
-
-    %% Backend Layer
-    subgraph Backend [Backend Microservice - FastAPI]
-        API[FastAPI Endpoint] -->|Async Thread| HYBRID[Hybrid Analysis Pipeline]
-        
-        HYBRID -->|Extracts Bounding Boxes| OCR[EasyOCR / OpenCV]
-        HYBRID -->|Validates Legal Rules| AI[Gemini Vision AI]
-        
-        OCR --> MERGE[Result Merger]
-        AI --> MERGE
-    end
-
+    
     %% Database Layer
-    subgraph Database [Storage Layer]
-        DB[(PostgreSQL / SQLite)]
-        S3[Blob Storage / S3]
+    subgraph Storage [Database & Persistence]
+        API -->|Sync Scan Results| DB[(PostgreSQL Neon DB)]
+        W <-->|Prisma ORM Query| DB
     end
-
-    %% Connections
-    UI -->|POST /analyze| API
-    MERGE -->|JSON Compliance Report| UI
-    DB_C <--> DB
-    API -->|Saves Upload| S3
+    
+    %% Output
+    RULES -->|Structured JSON| W
+    RULES -->|Structured JSON| M
+    W -->|Generate PDF Report| PDF[Court-Admissible PDF Audit]
 ```
 
 ---
 
-## 5. Security & Authentication
-* **Role-Based Access Control (RBAC):** The system enforces roles (`Admin` vs. `Inspector`). Only authenticated officials can generate reports or modify team members.
-* **Stateless Sessions:** JWT (JSON Web Tokens) are utilized to maintain secure, stateless sessions across the frontend and backend.
-* **CORS & Payload Limits:** The FastAPI backend restricts Cross-Origin requests to authorized frontend domains and enforces a strict 10MB payload limit to prevent DDoS attacks via massive file uploads.
+## 5. Security & Compliance
+* **Role-Based Access Control (RBAC):** Authenticated enforcement officials and administrators maintain segregated access permissions.
+* **Stateless Sessions:** Secure JSON Web Tokens (JWT) for authentication.
+* **Statutory Regulatory Adherence:** Mapped to Rule 6 of the Legal Metrology (Packaged Commodities) Rules, 2011, as enforced by the Ministry of Consumer Affairs.
 
 ---
 
-## 6. Deployment Framework
-
-The system is designed to be cloud-agnostic, supporting deployment on AWS, Azure, or Government Cloud (NIC).
-
-### 6.1 Containerization
-The system is fully containerized using **Docker**.
-* `Dockerfile.web`: Packages the Next.js application.
-* `Dockerfile.api`: Packages the FastAPI application, installing required C++ build tools for OpenCV and PyTorch for EasyOCR.
-
-### 6.2 Recommended Cloud Topology (Production)
-1. **Frontend Hosting:** Vercel or AWS Amplify (provides global CDN caching and edge routing).
-2. **Backend Compute:** AWS Elastic Container Service (ECS) with AWS Fargate. Provides auto-scaling capabilities necessary for handling concurrent, heavy OCR workloads during peak inspection hours.
-3. **Database Hosting:** Amazon RDS (PostgreSQL) in a private subnet for secure, ACID-compliant storage of inspection records.
-4. **Blob Storage:** Amazon S3 for storing raw evidentiary photographs of packaged commodities.
-
-### 6.3 CI/CD Pipeline
-* **Version Control:** GitHub/GitLab.
-* **Actions:** Automated GitHub Actions trigger on push to `main`, running static type checking (`tsc`), linting, and building the Docker images before pushing them to an Elastic Container Registry (ECR).
-
----
-
-## 7. Mapping to SIH Requirements
+## 6. Mapping to SIH Requirements
 
 | SIH Requirement | Implementation in System |
 | :--- | :--- |
-| **User-friendly web application** | Responsive Next.js PWA with Dark Mode and accessibility standards. |
-| **Automated extraction & detection** | Hybrid EasyOCR + Gemini Vision pipeline extracts text accurately regardless of package orientation. |
-| **Rule-based compliance checking** | Prompt-engineered AI strict checks against Legal Metrology Rules, 2011 (MRP, Net Qty, Dates). |
-| **Dashboard for monitoring** | Dedicated `/` route features dynamic Recharts (Pie/Area charts) for violation trends. |
-| **Repository of scanned products** | Relational DB stores interconnected `Products`, `Inspections`, and `Violations`. |
-| **Export of reports** | `jsPDF` integration generates dynamic, printable PDF reports with photographic evidence. |
+| **User-friendly web & mobile app** | Next.js 16 Dark-Mode Dashboard + Expo React Native Inspector Mobile App. |
+| **Automated extraction & detection** | Google Gemini Multimodal Vision extracts statutory text and generates 2D bounding boxes. |
+| **Rule-based compliance checking** | Prompt-engineered AI checks against Legal Metrology Rules, 2011 (MRP, Net Qty, Dates, Mfg, USP). |
+| **Dashboard for monitoring** | Executive overview featuring Recharts analytics, violation rates, and recent audits. |
+| **Repository of scanned products** | PostgreSQL (Neon) database storing synchronized `Products`, `Inspections`, and `Violations`. |
+| **Export of reports** | Dynamic `jsPDF` generation of official compliance inspection certificates. |
