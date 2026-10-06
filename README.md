@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legal Metrology Compliance Web App
 
-## Getting Started
+A full-stack web application designed to automate Legal Metrology Rule compliance checks. The platform allows users to upload product labeling and packaging images, extracting critical information via Optical Character Recognition (OCR) and computer vision to verify adherence to statutory regulations.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### **Frontend**
+* **Framework:** [Next.js](https://nextjs.org/) (App Router)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### **Backend & Processing**
+* **API Framework:** Python [FastAPI](https://fastapi.tiangolo.com/)
+* **Computer Vision:** OpenCV
+* **Text Extraction:** Tesseract OCR
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ✨ Key Features
 
-To learn more about Next.js, take a look at the following resources:
+* **Image Upload Pipeline:** A seamless frontend-to-backend interface for ingesting product packaging and label photographs.
+* **Automated OCR Extraction:** Leverages OpenCV for image preprocessing (noise reduction, contrast enhancement) and Tesseract OCR to accurately parse text data (e.g., net quantity, manufacturer details, pricing).
+* **Real-time Compliance Validation:** Automatically cross-references extracted label data against standard Legal Metrology guidelines to flag discrepancies.
+* **Modern UI/UX:** Built with a responsive, intuitive interface optimized for fast verification workflows.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Getting Started
 
-## Deploy on Vercel
+### Prerequisites
+* Node.js (v18+ recommended)
+* Python (v3.9+)
+* Tesseract OCR installed on your system (ensure `tesseract` is added to your system environment variables)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Installation & Running Locally
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/AllikaSaiHarsha/legal-metrology-web.git](https://github.com/AllikaSaiHarsha/legal-metrology-web.git)
+   cd legal-metrology-web
