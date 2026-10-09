@@ -27,6 +27,39 @@ It leverages **Google Gemini Multimodal AI** to instantly audit retail product p
 
 ---
 
+## 📸 Product Interface & Live Inspection Showcase
+
+<div align="center">
+  <p><strong>Zero-Shot AI Vision Inspection with 2D Bounding Boxes & Rule 6 Statutory Scorecard:</strong></p>
+  <img src="public/docs/inspection-results-preview.png" alt="LegalMetrics Live AI Inspection with 2D Bounding Boxes" width="100%" />
+</div>
+
+<br/>
+
+<div align="center">
+  <p><strong>Executive Command Center & Real-Time Violation Analytics:</strong></p>
+  <img src="public/docs/dashboard-preview.png" alt="LegalMetrics Executive Compliance Dashboard" width="100%" />
+</div>
+
+<br/>
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%">
+        <p align="center"><strong>Packaging Ingestion & Framing Reticle</strong></p>
+        <img src="public/docs/scanner-preview.png" alt="Live Package Scanner" width="100%" />
+      </td>
+      <td width="50%">
+        <p align="center"><strong>Enforcement Officer Authentication</strong></p>
+        <img src="public/docs/login-preview.png" alt="Secure Enforcement Portal" width="100%" />
+      </td>
+    </tr>
+  </table>
+</div>
+
+---
+
 ## 🧐 What Problem Does This Product Solve?
 
 In India, every packaged commodity (FMCG goods, cosmetics, packaged food, electronics) is legally required under **Rule 6 of the Legal Metrology (Packaged Commodities) Rules, 2011** to display 9 mandatory declarations in a legible, standardized format:
