@@ -17,8 +17,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .env*
+!.env.example
 .vercel
 *.tsbuildinfo
 next-env.d.ts
 public/uploads/*
 !public/uploads/.gitkeep
+.claude/
+CLAUDE.md
