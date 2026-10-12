@@ -4,6 +4,7 @@ export default withAuth({
   pages: {
     signIn: "/login",
   },
+  secret: process.env.NEXTAUTH_SECRET || "super-secret-metrology-key-legal-metrology-2026",
 });
 
 export const config = {
