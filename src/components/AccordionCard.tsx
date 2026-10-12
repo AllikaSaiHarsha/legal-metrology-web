@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   CheckCircle2,
   XCircle,
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
-import { DecryptedText } from "@/components/reactbits";
+import { Badge } from "@/components/ui/badge";
 
 export interface AccordionCardProps {
   ruleCode: string;
@@ -37,36 +37,30 @@ export function AccordionCard({
 
   const statusConfig = {
     pass: {
-      icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
+      icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
       border: "border-l-emerald-500",
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-500",
+      bg: "bg-emerald-500/15",
+      badgeVariant: "success" as const,
     },
     fail: {
-      icon: <XCircle className="w-5 h-5 text-rose-500" />,
-      border: "border-l-rose-500",
-      bg: "bg-rose-500/10",
-      text: "text-rose-500",
+      icon: <XCircle className="w-4 h-4 text-red-400" />,
+      border: "border-l-red-500",
+      bg: "bg-red-500/15",
+      badgeVariant: "destructive" as const,
     },
     warning: {
-      icon: <AlertCircle className="w-5 h-5 text-amber-500" />,
-      border: "border-l-amber-500",
-      bg: "bg-amber-500/10",
-      text: "text-amber-500",
+      icon: <AlertCircle className="w-4 h-4 text-yellow-400" />,
+      border: "border-l-yellow-500",
+      bg: "bg-yellow-500/15",
+      badgeVariant: "warning" as const,
     },
-  };
-
-  const severityConfig = {
-    critical: "bg-rose-500/20 text-rose-300 border-rose-500/30",
-    major: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    minor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   };
 
   const activeStatus = statusConfig[status];
 
-  const cardRef = React.useRef<HTMLDivElement>(null);
-  const [spotlightPos, setSpotlightPos] = React.useState({ x: 0, y: 0 });
-  const [spotlightOpacity, setSpotlightOpacity] = React.useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
+  const [spotlightOpacity, setSpotlightOpacity] = useState(0);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -75,21 +69,21 @@ export function AccordionCard({
   };
 
   const glowColorMap = {
-    pass: "rgba(52, 211, 153, 0.12)",
-    fail: "rgba(244, 63, 94, 0.15)",
-    warning: "rgba(251, 191, 36, 0.12)",
+    pass: "rgba(34, 197, 94, 0.12)",
+    fail: "rgba(239, 68, 68, 0.15)",
+    warning: "rgba(234, 179, 8, 0.12)",
   };
 
   return (
     <motion.div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setSpotlightOpacity(0.9)}
+      onMouseEnter={() => setSpotlightOpacity(1)}
       onMouseLeave={() => setSpotlightOpacity(0)}
       layout
-      className={`relative rounded-2xl bg-zinc-900/50 backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-lg border-l-4 ${activeStatus.border} hover:border-white/[0.15] transition-all`}
+      className={`relative rounded-xl bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 overflow-hidden shadow-lg border-l-4 ${activeStatus.border} hover:border-slate-700/80 transition-all`}
     >
-      {/* React Bits spotlight effect */}
+      {/* Specular Spotlight effect */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-out z-0"
         style={{
@@ -99,40 +93,31 @@ export function AccordionCard({
       />
 
       <div
-        className="relative z-10 p-4 cursor-pointer flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+        className="relative z-10 p-4 cursor-pointer flex items-center justify-between hover:bg-slate-800/20 transition-colors select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-4">
-          <div className={`p-2 rounded-full ${activeStatus.bg}`}>
+        <div className="flex items-center gap-3.5">
+          <div className={`p-2 rounded-lg ${activeStatus.bg}`}>
             {activeStatus.icon}
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-mono text-zinc-400">
-                <DecryptedText
-                  text={ruleCode}
-                  speed={25}
-                  maxIterations={6}
-                  animateOn="hover"
-                  className="text-zinc-300 font-mono text-xs font-semibold"
-                  encryptedClassName="text-indigo-400 font-mono text-xs"
-                />
+              <span className="text-xs font-mono font-semibold text-blue-400">
+                {ruleCode}
               </span>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full border ${severityConfig[severity]}`}
-              >
+              <Badge variant={activeStatus.badgeVariant} className="text-[10px] py-0 px-2 uppercase">
                 {severity}
-              </span>
+              </Badge>
             </div>
-            <h4 className="text-zinc-100 font-medium">{title}</h4>
+            <h4 className="text-slate-100 font-semibold text-xs tracking-tight">{title}</h4>
           </div>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-          className="text-zinc-400"
+          transition={{ duration: 0.25 }}
+          className="text-slate-400 p-1 rounded-lg hover:bg-slate-800"
         >
-          <ChevronDown className="w-5 h-5" />
+          <ChevronDown className="w-4 h-4" />
         </motion.div>
       </div>
 
@@ -142,26 +127,30 @@ export function AccordionCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="p-4 pt-0 border-t border-white/[0.04]">
-              <p className="text-zinc-400 text-sm mt-4 mb-4">{description}</p>
+            <div className="p-4 pt-0 border-t border-slate-800/60">
+              <p className="text-slate-400 text-xs mt-3 mb-3 leading-relaxed">{description}</p>
 
               {(extractedValue || expectedValue) && (
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   {extractedValue && (
-                    <div className="bg-black/20 rounded-xl p-3 border border-white/[0.05]">
-                      <p className="text-xs text-zinc-500 mb-1">Extracted Value</p>
-                      <p className="text-sm text-zinc-200 font-mono">
+                    <div className="bg-slate-950/70 rounded-lg p-3 border border-slate-800">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
+                        Extracted Declaration
+                      </p>
+                      <p className="text-xs text-slate-200 font-mono">
                         {extractedValue}
                       </p>
                     </div>
                   )}
                   {expectedValue && (
-                    <div className="bg-black/20 rounded-xl p-3 border border-white/[0.05]">
-                      <p className="text-xs text-zinc-500 mb-1">Expected Value</p>
-                      <p className="text-sm text-zinc-200 font-mono">
+                    <div className="bg-slate-950/70 rounded-lg p-3 border border-slate-800">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-semibold">
+                        Mandatory Statutory Standard
+                      </p>
+                      <p className="text-xs text-slate-200 font-mono">
                         {expectedValue}
                       </p>
                     </div>
@@ -172,11 +161,11 @@ export function AccordionCard({
               {remediation &&
                 status === "fail" &&
                 !remediation.includes("Ensure declaration is clearly printed") && (
-                <div className="bg-rose-500/5 rounded-xl p-3 border border-rose-500/10 mt-2">
-                  <p className="text-xs font-semibold text-rose-400 mb-1">
-                    Remediation Required
+                <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/20 mt-2">
+                  <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1">
+                    Remediation Required Under PCR 2011
                   </p>
-                  <p className="text-sm text-zinc-300">{remediation}</p>
+                  <p className="text-xs text-slate-300">{remediation}</p>
                 </div>
               )}
             </div>
@@ -186,3 +175,5 @@ export function AccordionCard({
     </motion.div>
   );
 }
+
+export default AccordionCard;

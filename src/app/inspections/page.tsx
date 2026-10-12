@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import {
   ClipboardCheck,
   Search,
-  Plus,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -15,10 +14,24 @@ import {
   Filter,
   Sparkles,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { BentoCard } from "@/components/BentoCard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import {
   loadStore,
   subscribeStore,
@@ -91,292 +104,323 @@ export default function InspectionsPage() {
     violations.some((v) => v.inspectionId === ins.id)
   ).length;
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedInspections = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const paginatedInspections = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
       <Sidebar />
       <main className="flex-1 ml-72">
         <TopBar
           title="Inspections Registry"
-          subtitle="Enforcement audit history and scanned product records"
+          subtitle="Statutory enforcement audit history and compliance log"
+          action={
+            <Link href="/scan">
+              <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>New Label Scan</span>
+              </Button>
+            </Link>
+          }
         />
 
-        <div className="p-8 space-y-6">
-          {/* Top Quick Stats */}
-          <div className="grid grid-cols-4 gap-6">
-            <BentoCard delay={0.05}>
+        <div className="p-8 space-y-6 max-w-7xl">
+          {/* Top Quick Stats Grid (Bento) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <BentoCard delay={0.05} glowColor="rgba(37, 99, 235, 0.2)">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-400 font-medium">Total Audits</p>
-                  <p className="text-2xl font-bold text-zinc-100 mt-1">{total}</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Total Audits
+                  </p>
+                  <p className="text-2xl font-bold text-slate-100 mt-1 font-mono">{total}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/25 flex items-center justify-center text-blue-400">
                   <ClipboardCheck className="w-5 h-5" />
                 </div>
               </div>
             </BentoCard>
 
-            <BentoCard delay={0.1}>
+            <BentoCard delay={0.1} glowColor="rgba(34, 197, 94, 0.2)">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-400 font-medium">Completed</p>
-                  <p className="text-2xl font-bold text-emerald-400 mt-1">{completed}</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Completed
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-400 mt-1 font-mono">{completed}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
               </div>
             </BentoCard>
 
-            <BentoCard delay={0.15}>
+            <BentoCard delay={0.15} glowColor="rgba(239, 68, 68, 0.2)">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-400 font-medium">Violations Flagged</p>
-                  <p className="text-2xl font-bold text-rose-400 mt-1">{withViolations}</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Violations Flagged
+                  </p>
+                  <p className="text-2xl font-bold text-red-400 mt-1 font-mono">{withViolations}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center text-red-400">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
               </div>
             </BentoCard>
 
-            <BentoCard delay={0.2}>
+            <BentoCard delay={0.2} glowColor="rgba(234, 179, 8, 0.2)">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-400 font-medium">In Progress</p>
-                  <p className="text-2xl font-bold text-amber-400 mt-1">{inProgress}</p>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    In Progress
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-400 mt-1 font-mono">{inProgress}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                <div className="w-10 h-10 rounded-xl bg-yellow-500/15 border border-yellow-500/25 flex items-center justify-center text-yellow-400">
                   <Clock className="w-5 h-5" />
                 </div>
               </div>
             </BentoCard>
           </div>
 
-          {/* Search, Filter & CTA */}
-          <div className="flex items-center justify-between gap-4 p-4 rounded-3xl bg-zinc-900/60 backdrop-blur-xl border border-white/[0.08] shadow-xl">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl liquid-glass-card">
+            <div className="relative flex-1 max-w-md w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search inspections by product, ID, inspector, location..."
+                placeholder="Search audits by commodity, ID, officer, jurisdiction..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2 bg-slate-900/70 border border-slate-700/60 rounded-xl text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60 transition-all"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                  statusFilter === "all"
-                    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
-                }`}
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+              <Button
+                variant={statusFilter === "all" ? "default" : "secondary"}
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setCurrentPage(1);
+                }}
+                className="text-xs"
               >
-                All
-              </button>
-              <button
-                onClick={() => setStatusFilter("completed")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                  statusFilter === "completed"
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
-                }`}
+                All Audits
+              </Button>
+              <Button
+                variant={statusFilter === "completed" ? "default" : "secondary"}
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("completed");
+                  setCurrentPage(1);
+                }}
+                className="text-xs"
               >
                 Completed
-              </button>
-              <button
-                onClick={() => setStatusFilter("violations")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                  statusFilter === "violations"
-                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
-                }`}
+              </Button>
+              <Button
+                variant={statusFilter === "violations" ? "destructive" : "secondary"}
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("violations");
+                  setCurrentPage(1);
+                }}
+                className="text-xs"
               >
                 With Violations
-              </button>
-
-              <div className="w-px h-5 bg-white/[0.08] mx-1" />
-
-              <Link
-                href="/scan"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>New Package Scan</span>
-              </Link>
+              </Button>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="rounded-3xl bg-zinc-900/60 backdrop-blur-xl border border-white/[0.08] shadow-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-zinc-800/40 text-zinc-400 uppercase tracking-wider text-[11px] border-b border-white/[0.06]">
-                  <tr>
-                    <th className="py-3.5 px-6 font-medium">Inspection ID</th>
-                    <th className="py-3.5 px-6 font-medium">Product / Commodity</th>
-                    <th className="py-3.5 px-6 font-medium">Inspector</th>
-                    <th className="py-3.5 px-6 font-medium">Location</th>
-                    <th className="py-3.5 px-6 font-medium">Date</th>
-                    <th className="py-3.5 px-6 font-medium">Status</th>
-                    <th className="py-3.5 px-6 font-medium">Score</th>
-                    <th className="py-3.5 px-6 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
+          {/* Precision Table Card */}
+          <div className="rounded-2xl liquid-glass-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Audit ID</TableHead>
+                  <TableHead>Packaged Commodity</TableHead>
+                  <TableHead>Inspector</TableHead>
+                  <TableHead>Jurisdiction</TableHead>
+                  <TableHead>Audit Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
 
-                <tbody className="divide-y divide-white/[0.04]">
-                  {paginatedInspections.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-12 text-center text-zinc-500">
-                        No inspections match your search filter.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedInspections.map((inspection) => {
-                      const prod = products.find((p) => p.id === inspection.productId);
-                      const vios = violations.filter((v) => v.inspectionId === inspection.id);
-                      const isScan = inspection.id.startsWith("INS-SCAN");
+              <TableBody>
+                {paginatedInspections.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-12 text-center text-slate-500 text-xs">
+                      No inspections found matching your search filter.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedInspections.map((inspection) => {
+                    const prod = products.find((p) => p.id === inspection.productId);
+                    const vios = violations.filter((v) => v.inspectionId === inspection.id);
+                    const isScan = inspection.id.startsWith("INS-SCAN");
+                    const isPass = inspection.complianceScore >= 85;
+                    const isWarning =
+                      inspection.complianceScore >= 70 && inspection.complianceScore < 85;
 
-                      return (
-                        <tr
-                          key={inspection.id}
-                          className="hover:bg-white/[0.02] transition-colors group"
-                        >
-                          <td className="py-4 px-6 font-mono">
-                            <div className="flex items-center gap-2">
-                              <Link
-                                href={`/inspection/${inspection.id}`}
-                                className="text-indigo-400 hover:text-indigo-300 font-semibold"
-                              >
-                                {inspection.id}
-                              </Link>
-                              {isScan && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                  LIVE SCAN
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="py-4 px-6">
-                            <span className="font-medium text-zinc-200 text-sm block">
-                              {prod ? prod.name : "Packaged Commodity"}
-                            </span>
-                            <span className="text-[11px] text-zinc-400">
-                              {prod?.manufacturer || "Manufacturer per pack"}
-                            </span>
-                          </td>
-
-                          <td className="py-4 px-6 text-zinc-300 font-medium">
-                            {inspection.inspector}
-                          </td>
-
-                          <td className="py-4 px-6 text-zinc-400">
-                            {inspection.location}
-                          </td>
-
-                          <td className="py-4 px-6 text-zinc-400 font-mono">
-                            {inspection.date}
-                          </td>
-
-                          <td className="py-4 px-6">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                                inspection.status === "completed"
-                                  ? vios.length === 0
-                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                    : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                              }`}
+                    return (
+                      <TableRow key={inspection.id}>
+                        <TableCell className="font-mono text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={`/inspection/${inspection.id}`}
+                              className="text-blue-400 hover:text-blue-300 font-semibold"
                             >
-                              <span>
-                                {vios.length > 0
-                                  ? `${vios.length} VIOLATION${vios.length > 1 ? "S" : ""}`
-                                  : inspection.status.toUpperCase()}
-                              </span>
-                            </span>
-                          </td>
+                              {inspection.id}
+                            </Link>
+                            {isScan && (
+                              <Badge variant="default" className="text-[9px] px-1.5 py-0">
+                                AI SCAN
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
 
-                          <td className="py-4 px-6 font-mono font-bold">
-                            <span
-                              className={
-                                (inspection.complianceScore || 90) >= 80
-                                  ? "text-emerald-400"
-                                  : "text-rose-400"
-                              }
+                        <TableCell>
+                          <span className="font-semibold text-slate-100 text-xs block">
+                            {prod ? prod.name : "Packaged Commodity"}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {prod?.manufacturer || "Manufacturer per label"}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-slate-300 font-medium text-xs">
+                          {inspection.inspector}
+                        </TableCell>
+
+                        <TableCell className="text-slate-400 text-xs">
+                          {inspection.location}
+                        </TableCell>
+
+                        <TableCell className="text-slate-400 font-mono text-xs">
+                          {inspection.date}
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge
+                            variant={
+                              inspection.status === "completed"
+                                ? "success"
+                                : inspection.status === "in-progress"
+                                ? "warning"
+                                : "destructive"
+                            }
+                          >
+                            {inspection.status}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <span
+                            className={`font-mono font-semibold text-xs ${
+                              isPass
+                                ? "text-emerald-400"
+                                : isWarning
+                                ? "text-yellow-400"
+                                : "text-red-400"
+                            }`}
+                          >
+                            {inspection.complianceScore}%
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => handleDownloadPDF(inspection)}
+                              title="Download PDF Certificate"
+                              className="text-slate-400 hover:text-blue-300"
                             >
-                              {inspection.complianceScore || 85}%
-                            </span>
-                          </td>
+                              <Download className="w-3.5 h-3.5" />
+                            </Button>
 
-                          <td className="py-4 px-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleDownloadPDF(inspection)}
-                                className="p-1.5 rounded-xl text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-colors"
-                                title="Download PDF Report"
+                            <Link href={`/inspection/${inspection.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                title="View Split Screen Audit"
+                                className="text-slate-400 hover:text-slate-200"
                               >
-                                <Download className="w-4 h-4" />
-                              </button>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </Button>
+                            </Link>
 
-                              <Link
-                                href={`/inspection/${inspection.id}`}
-                                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-colors"
-                                title="View Split-Screen Inspection Audit"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </Link>
-                              
-                              <button
-                                onClick={() => {
-                                  if (window.confirm("Are you sure you want to delete this inspection? This will remove all associated product data and violations.")) {
-                                    deleteInspection(inspection.id);
-                                  }
-                                }}
-                                className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-colors"
-                                title="Delete Inspection"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-            
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => {
+                                if (
+                                  confirm(`Are you sure you want to delete inspection ${inspection.id}?`)
+                                ) {
+                                  deleteInspection(inspection.id);
+                                }
+                              }}
+                              title="Delete Record"
+                              className="text-slate-400 hover:text-red-400"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-white/[0.06] bg-zinc-900/40">
-                <span className="text-xs text-zinc-400">
-                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} entries
+            <div className="p-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>
+                Showing {Math.min(filtered.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} to{" "}
+                {Math.min(filtered.length, currentPage * ITEMS_PER_PAGE)} of {filtered.length} records
+              </span>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="gap-1 text-xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
+                </Button>
+
+                <span className="font-mono px-2 text-slate-300">
+                  {currentPage} / {totalPages}
                 </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="gap-1 text-xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
   UploadCloud,
   ScanSearch,
@@ -18,12 +18,15 @@ import {
   BookmarkCheck,
   FileText,
   ExternalLink,
+  Layers,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
 import {
   analyzePackageImage,
   checkBackendHealth,
   AnalysisResult,
+  Detection,
 } from "@/lib/api";
 import {
   saveScannedInspection,
@@ -38,7 +41,34 @@ import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import BackendBoundingBoxViewer from "./BackendBoundingBoxViewer";
 import { AccordionCard } from "./AccordionCard";
 import { useSession } from "next-auth/react";
-import { ShinyText, TrueFocus, StarBorder, Magnet, ClickSpark, DecryptedText } from "@/components/reactbits";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+function createFallbackInspection(
+  savedInspection: Inspection | undefined,
+  productId: string,
+  inspectorName: string | null | undefined,
+  failedCount: number,
+  complianceScore: number,
+  detections: Detection[],
+  imageUrl: string
+): Inspection {
+  if (savedInspection) return savedInspection;
+  const suffix = Date.now().toString().slice(-4);
+  const dateStr = new Date().toISOString().split("T")[0];
+  return {
+    id: `INS-CERT-${suffix}`,
+    productId,
+    inspector: inspectorName || "Official Metrologist",
+    location: "Central Packaging Enforcement Lab",
+    date: dateStr,
+    status: failedCount > 0 ? "in-progress" : "completed",
+    complianceScore,
+    findings: detections.map((d) => d.label),
+    imageUrl,
+    detections,
+  };
+}
 
 export default function LiveInspectionScanner() {
   const { data: session } = useSession();
@@ -126,8 +156,9 @@ export default function LiveInspectionScanner() {
     }
 
     const saved = saveScannedInspection({
-      productName: productNameInput || "Scanned Commodity",
-      manufacturer: manufacturerInput || "Per Packaging Label",
+      productName: productNameInput || results.product_name || "Packaged Commodity",
+      manufacturer: manufacturerInput || results.manufacturer || "Per Packaging Label",
+      inspectorName: session?.user?.name || undefined,
       detections: results.detections,
       imageUrl: finalImg || "",
     });
@@ -141,40 +172,60 @@ export default function LiveInspectionScanner() {
   };
 
   const handleGeneratePDF = async () => {
-    if (savedData) {
-      generateInspectionPDF({
-        inspection: savedData.inspection,
-        product: savedData.product,
-        violations: savedData.violations,
-      });
-    } else if (results) {
-      let finalImg = dataUrl;
-      if (!finalImg && selectedFile) {
-        finalImg = await fileToDataUrl(selectedFile);
-      }
-      if (!finalImg && previewUrl) {
-        finalImg = previewUrl;
-      }
-
-      const saved = saveScannedInspection({
-        productName: productNameInput || "Scanned Commodity",
-        manufacturer: manufacturerInput || "Per Packaging Label",
-        detections: results.detections,
-        imageUrl: finalImg || "",
-      });
-
-      if (finalImg) {
-        setCachedImage(saved.inspection.id, finalImg);
-        saveImageToIDB(saved.inspection.id, finalImg);
-      }
-
-      setSavedData(saved);
-      generateInspectionPDF({
-        inspection: saved.inspection,
-        product: saved.product,
-        violations: saved.violations,
-      });
+    let finalImg = dataUrl;
+    if (!finalImg && selectedFile) {
+      finalImg = await fileToDataUrl(selectedFile);
     }
+    if (!finalImg && results?.image_url) {
+      finalImg = results.image_url;
+    }
+    if (!finalImg && previewUrl) {
+      finalImg = previewUrl;
+    }
+
+    const inspectionRecord: Inspection = createFallbackInspection(
+      savedData?.inspection,
+      savedData?.product?.id || "PROD-GEN",
+      session?.user?.name,
+      failedCount,
+      complianceScore,
+      detections,
+      finalImg || ""
+    );
+
+    const productRecord: Product = savedData?.product || {
+      id: inspectionRecord.productId,
+      name: productNameInput || results?.product_name || selectedFile?.name || "Packaged Commodity",
+      category: "Packaged Commodity (PCR 2011)",
+      manufacturer: manufacturerInput || results?.manufacturer || "Per Label Declaration",
+      mfgDate: "Per Label",
+      expiryDate: "Per Label",
+      batchNo: "BATCH-AI-INSPECT",
+      netQuantity: "Declared on Pack",
+      mrp: 0,
+      complianceStatus: failedCount > 0 ? "non-compliant" : "compliant",
+    };
+
+    const violationsList: Violation[] =
+      savedData?.violations ||
+      detections
+        .filter((d) => d.status === "Failed")
+        .map((d, idx) => ({
+          id: `VIOL-${idx + 1}`,
+          inspectionId: inspectionRecord.id,
+          ruleCode: d.category ? `LM-R6-${d.category.toUpperCase().replace(/\s+/g, "_")}` : "LM-R6(1)",
+          ruleTitle: d.category || "Rule 6 Statutory Violation",
+          description: d.label,
+          severity: "critical" as const,
+          remediation: "Rectify mandatory statutory declaration on package label under Rule 6.",
+          status: "open" as const,
+        }));
+
+    generateInspectionPDF({
+      inspection: inspectionRecord,
+      product: productRecord,
+      violations: violationsList,
+    });
   };
 
   const onFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -229,7 +280,7 @@ export default function LiveInspectionScanner() {
           .replace(/\.[^/.]+$/, "")
           .replace(/[-_]/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-          
+
       if (data.product_name) setProductNameInput(data.product_name);
       if (data.manufacturer) setManufacturerInput(data.manufacturer);
 
@@ -263,7 +314,7 @@ export default function LiveInspectionScanner() {
       const raw = err.message || "";
       if (raw.includes("429") || raw.includes("RESOURCE_EXHAUSTED")) {
         setErrorMessage(
-          "AI Inspection service is momentarily rate-limited by upstream Gemini quota. Please wait a few seconds and click 'Run Backend Analysis' again."
+          "AI Inspection service is momentarily rate-limited by upstream Gemini quota. Please wait a few seconds and click 'Execute Analysis' again."
         );
       } else if (raw.includes("503") || raw.includes("UNAVAILABLE")) {
         setErrorMessage(
@@ -286,7 +337,7 @@ export default function LiveInspectionScanner() {
     setErrorMessage(null);
   };
 
-  // Calculations from results - ignore Country of Origin if failed/missing (only required for imported commodities)
+  // Calculations from results - ignore Country of Origin if failed/missing
   const rawDetections = results?.detections || [];
   const detections = rawDetections.filter((d) => {
     const cat = (d.category || "").toLowerCase();
@@ -309,26 +360,28 @@ export default function LiveInspectionScanner() {
       : 100;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-950">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950 text-slate-100 select-none">
       {/* Header bar */}
-      <div className="px-8 py-4 border-b border-white/[0.06] flex items-center justify-between bg-zinc-900/40 backdrop-blur-xl">
+      <div className="px-8 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.05] transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-colors"
             title="Back to Dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-              <span>Live Package Scanner</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
-                <ShinyText text="Legal Metrology Rule 2011" color="#818cf8" shineColor="#ffffff" speed={3} />
-              </span>
-            </h2>
-            <p className="text-xs text-zinc-400">
-              Run automated OCR extraction & mandatory packaging compliance verification
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-100 tracking-tight">
+                Live Package Scanner
+              </h2>
+              <Badge variant="default" className="text-[10px]">
+                Rule 6 (PCR 2011)
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Multimodal Gemini 2.5 Flash neural vision &amp; statutory compliance pipeline
             </p>
           </div>
         </div>
@@ -336,12 +389,12 @@ export default function LiveInspectionScanner() {
         {/* Backend health status badge */}
         <div className="flex items-center gap-3">
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium font-mono ${
               backendOnline === true
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
                 : backendOnline === false
-                ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                : "bg-zinc-800 text-zinc-400 border-white/[0.08]"
+                ? "bg-red-500/10 text-red-300 border-red-500/25"
+                : "bg-slate-900 text-slate-400 border-slate-800"
             }`}
           >
             <Server className="w-3.5 h-3.5" />
@@ -350,27 +403,29 @@ export default function LiveInspectionScanner() {
                 backendOnline === true
                   ? "bg-emerald-400 animate-pulse"
                   : backendOnline === false
-                  ? "bg-rose-400"
-                  : "bg-zinc-500"
+                  ? "bg-red-400"
+                  : "bg-slate-500"
               }`}
             />
             <span>
               {backendOnline === true
-                ? "AI Engine Connected"
+                ? "Gemini AI Engine Online"
                 : backendOnline === false
-                ? "AI Engine Offline"
-                : "Checking AI Engine..."}
+                ? "Engine Offline"
+                : "Probing AI Engine..."}
             </span>
           </div>
 
           {previewUrl && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={resetAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] border border-white/[0.08] transition-colors"
+              className="gap-1.5 text-xs text-slate-300"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reset</span>
-            </button>
+              <span>Reset Scan</span>
+            </Button>
           )}
         </div>
       </div>
@@ -378,26 +433,22 @@ export default function LiveInspectionScanner() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         {!previewUrl ? (
-          /* Step 1: Upload Zone */
-          <div className="max-w-4xl mx-auto p-10 flex flex-col items-center justify-center min-h-[75vh]">
+          /* Step 1: Upload Dropzone (Spatial Liquid Glass) */
+          <div className="max-w-4xl mx-auto p-10 flex flex-col items-center justify-center min-h-[78vh]">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-8"
             >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-500/20 to-violet-500/20 border border-indigo-500/30 text-indigo-400 mb-4 shadow-xl shadow-indigo-500/10">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600/15 border border-blue-500/30 text-blue-400 mb-4 shadow-xl shadow-blue-950/60">
                 <ScanSearch className="w-8 h-8" />
               </div>
-              <div className="flex justify-center mb-2">
-                <TrueFocus
-                  sentence="Scan Package for Compliance"
-                  borderColor="#6366f1"
-                  glowColor="rgba(99, 102, 241, 0.45)"
-                  className="text-2xl font-bold text-zinc-100"
-                />
-              </div>
-              <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
-                Upload a clear photo of the product package or commodity label. The AI vision engine will perform OCR and check for all mandatory declarations.
+              <h3 className="text-2xl font-bold text-slate-100 tracking-tight">
+                Inspect Commodity Packaging
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 max-w-lg mx-auto leading-relaxed">
+                Upload product packaging photographs or frontal label artwork.
+                The Gemini multimodal engine will detect bounding boxes, parse statutory text, and verify declarations under Legal Metrology Rules, 2011.
               </p>
             </motion.div>
 
@@ -409,10 +460,10 @@ export default function LiveInspectionScanner() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full max-w-2xl p-12 rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center ${
+              className={`w-full max-w-2xl p-12 rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center liquid-glass-card ${
                 isDragging
-                  ? "border-indigo-500 bg-indigo-500/10 shadow-2xl shadow-indigo-500/20"
-                  : "border-white/[0.1] bg-zinc-900/40 hover:border-indigo-500/50 hover:bg-zinc-900/70"
+                  ? "border-blue-500 bg-blue-600/15 shadow-2xl shadow-blue-600/25"
+                  : "border-slate-700/60 hover:border-blue-500/60 hover:bg-slate-900/60"
               }`}
             >
               <input
@@ -423,99 +474,86 @@ export default function LiveInspectionScanner() {
                 onChange={onFileInputChange}
               />
 
-              <div className="p-4 rounded-2xl bg-white/[0.04] text-zinc-400 mb-4 group-hover:scale-110 transition-transform">
-                <UploadCloud className="w-10 h-10 text-indigo-400" />
+              <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/50 text-blue-400 mb-4 group-hover:scale-105 transition-transform shadow-lg shadow-blue-950/40">
+                <UploadCloud className="w-10 h-10" />
               </div>
 
-              <h4 className="text-base font-semibold text-zinc-200">
-                Drag and drop your package image here
+              <h4 className="text-base font-semibold text-slate-200">
+                Drag and drop your package photo here
               </h4>
-              <p className="text-xs text-zinc-500 mt-1 mb-6">
-                Supports JPG, PNG, WEBP high-resolution package scans
+              <p className="text-xs text-slate-500 mt-1 mb-6">
+                Supports JPG, PNG, WEBP high-resolution package label scans
               </p>
 
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all"
-              >
-                Browse Files
-              </button>
+              <Button variant="default" size="default" className="shadow-blue-600/30">
+                <UploadCloud className="w-4 h-4 mr-1.5" />
+                Browse Packaging Files
+              </Button>
             </motion.div>
 
             {errorMessage && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-3"
+                className="mt-6 p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-3"
               >
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 <span>{errorMessage}</span>
               </motion.div>
             )}
           </div>
         ) : (
-          /* Step 2: Inspection Split Screen */
-          <div className="grid grid-cols-2 gap-0 h-full min-h-[calc(100vh-140px)]">
+          /* Step 2: Split Screen Inspection Workspace */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-full min-h-[calc(100vh-120px)]">
             {/* Left Panel: Uploaded Image & Bounding Boxes */}
-            <div className="bg-zinc-950 flex flex-col items-center justify-center p-6 border-r border-white/[0.06] relative">
+            <div className="bg-slate-950 flex flex-col items-center justify-center p-6 border-r border-slate-800/80 relative overflow-hidden">
               {/* Scan Trigger Bar if not analyzed yet */}
               {!results && !isScanning && (
-                <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between p-4 bg-zinc-900/90 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl">
+                <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl">
                   <div>
-                    <p className="text-xs font-semibold text-zinc-200">
+                    <p className="text-xs font-semibold text-slate-100 truncate max-w-xs">
                       {selectedFile?.name}
                     </p>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-slate-400 mt-0.5">
                       Ready for automated rule verification
                     </p>
                   </div>
-                  <ClickSpark sparkColor="#818cf8" sparkCount={10} sparkRadius={22}>
-                    <Magnet padding={40} magnetStrength={3}>
-                      <StarBorder
-                        color="#818cf8"
-                        speed="3s"
-                        thickness={1.5}
-                        backgroundColor="#4f46e5"
-                        onClick={runScan}
-                        className="hover:scale-[1.02] active:scale-[0.98] transition-transform cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 px-4 py-2 text-white text-xs font-semibold">
-                          <Sparkles className="w-4 h-4" />
-                          <ShinyText text="Run Backend Analysis" color="#ffffff" shineColor="#c7d2fe" speed={2.5} className="font-semibold" />
-                        </div>
-                      </StarBorder>
-                    </Magnet>
-                  </ClickSpark>
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={runScan}
+                    className="shadow-blue-600/30"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1.5" />
+                    <span>Run AI Analysis</span>
+                  </Button>
                 </div>
               )}
 
-              {/* Scanning Overlay Effect */}
+              {/* Scanning Laser Sweep Effect */}
               {isScanning && (
-                <div className="absolute inset-0 z-40 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                  <div className="relative w-48 h-48 flex items-center justify-center mb-6">
+                <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center">
+                  <div className="scanner-laser-line" />
+                  <div className="relative w-44 h-44 flex items-center justify-center mb-6">
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 rounded-full border-2 border-indigo-500/30 border-t-indigo-500"
+                      transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                      className="absolute inset-0 rounded-full border-2 border-blue-500/20 border-t-blue-500"
                     />
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400"
-                    >
-                      <ScanSearch className="w-10 h-10" />
-                    </motion.div>
+                    <div className="w-20 h-20 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-600/30">
+                      <ScanSearch className="w-10 h-10 animate-pulse" />
+                    </div>
                   </div>
-                  <p className="text-zinc-200 font-semibold text-base">
-                    Executing Neural Vision OCR &amp; Rule Engine...
+                  <p className="text-slate-100 font-bold text-base tracking-tight">
+                    Auditing Package Declarations...
                   </p>
-                  <p className="text-zinc-500 text-xs mt-1 font-mono">
-                    AI Spatial Localization &amp; Statutory Compliance Check
+                  <p className="text-slate-400 text-xs mt-1 font-mono">
+                    Gemini 2.5 Flash Multimodal Vision • Spatial Localization
                   </p>
                 </div>
               )}
 
-              {/* Viewer */}
+              {/* Interactive Bounding Box Viewer */}
               <BackendBoundingBoxViewer
                 imageUrl={previewUrl}
                 results={results}
@@ -523,108 +561,108 @@ export default function LiveInspectionScanner() {
             </div>
 
             {/* Right Panel: Rule Checklist & Analysis */}
-            <div className="bg-zinc-900/40 overflow-y-auto p-8 flex flex-col gap-6">
+            <div className="bg-slate-900/40 overflow-y-auto p-8 flex flex-col gap-6">
               {errorMessage && (
-                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-3">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-3">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {/* Inspection Summary Card */}
-              <div className="p-5 rounded-3xl bg-zinc-900/80 backdrop-blur-xl border border-white/[0.08] shadow-xl">
+              <div className="p-5 rounded-2xl liquid-glass-card shadow-xl">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-base font-bold text-zinc-100">
+                    <h3 className="text-base font-bold text-slate-100">
                       {results ? results.filename : selectedFile?.name}
                     </h3>
-                    <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">
                       {results
-                        ? `${results.original_width} × ${results.original_height} px • ${detections.length} regions evaluated`
-                        : "Awaiting analysis execution"}
+                        ? `${results.original_width} × ${results.original_height} px • ${detections.length} declarations audited`
+                        : "Awaiting analysis trigger"}
                     </p>
                   </div>
 
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                  <Badge
+                    variant={
                       results
                         ? failedCount > 0
-                          ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                          : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : "bg-zinc-800 text-zinc-400 border-white/[0.08]"
-                    }`}
+                          ? "destructive"
+                          : "success"
+                        : "secondary"
+                    }
                   >
                     {results
                       ? failedCount > 0
                         ? "VIOLATIONS DETECTED"
                         : "COMPLIANT"
                       : "READY TO SCAN"}
-                  </span>
+                  </Badge>
                 </div>
 
                 {/* KPI Metrics bar */}
-                <div className="grid grid-cols-4 gap-3 pt-3 border-t border-white/[0.06]">
-                  <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                    <p className="text-[11px] text-zinc-400 uppercase tracking-wider">
+                <div className="grid grid-cols-4 gap-3 pt-3 border-t border-slate-800/80">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
                       Pass
                     </p>
-                    <p className="text-xl font-bold text-emerald-400 mt-1">
+                    <p className="text-xl font-bold text-emerald-400 mt-0.5 font-mono">
                       {passedCount}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                    <p className="text-[11px] text-zinc-400 uppercase tracking-wider">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
                       Fail
                     </p>
-                    <p className="text-xl font-bold text-rose-400 mt-1">
+                    <p className="text-xl font-bold text-red-400 mt-0.5 font-mono">
                       {failedCount}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                    <p className="text-[11px] text-zinc-400 uppercase tracking-wider">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
                       Pending
                     </p>
-                    <p className="text-xl font-bold text-amber-400 mt-1">
+                    <p className="text-xl font-bold text-yellow-400 mt-0.5 font-mono">
                       {pendingCount}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                    <p className="text-[11px] text-zinc-400 uppercase tracking-wider">
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
                       Score
                     </p>
-                    <p className="text-xl font-bold text-zinc-100 mt-1">
+                    <p className="text-xl font-bold text-slate-100 mt-0.5 font-mono">
                       {complianceScore}%
                     </p>
                   </div>
                 </div>
 
-                {/* Auto-Stored to Inspections & PDF Export Action Panel */}
+                {/* Auto-Stored to Database & PDF Certificate CTA */}
                 {results && savedData && (
-                  <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-indigo-500/10 to-transparent border border-emerald-500/30 space-y-3 shadow-lg">
+                  <div className="mt-4 pt-4 border-t border-slate-800/80 space-y-3">
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent border border-emerald-500/25 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-emerald-400">
-                          <span className="relative flex h-2.5 w-2.5">
+                          <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                           </span>
-                          <span className="text-xs font-bold">
-                            Auto-Stored to Inspections as {savedData.inspection.id}
+                          <span className="text-xs font-bold font-mono">
+                            Auto-persisted as {savedData.inspection.id}
                           </span>
                         </div>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-                          Synced with Dashboard
-                        </span>
+                        <Badge variant="success" className="text-[10px]">
+                          PostgreSQL Synced
+                        </Badge>
                       </div>
 
-                      {/* Quick Edit of Product Name / Manufacturer */}
+                      {/* Commodity Name & Manufacturer metadata */}
                       <div className="grid grid-cols-2 gap-2.5 pt-1">
                         <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">
-                            Commodity Name
+                          <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">
+                            Commodity Identity
                           </label>
                           <input
                             type="text"
@@ -633,19 +671,21 @@ export default function LiveInspectionScanner() {
                               const val = e.target.value;
                               setProductNameInput(val);
                               if (savedData) {
-                                setSavedData(prev => prev ? { ...prev, product: { ...prev.product, name: val } } : null);
+                                setSavedData((prev) =>
+                                  prev ? { ...prev, product: { ...prev.product, name: val } } : null
+                                );
                                 updateInspectionProduct(savedData.inspection.id, {
                                   productName: val,
                                 });
                               }
                             }}
-                            className="w-full px-2.5 py-1.5 bg-black/40 border border-white/10 rounded-lg text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                            className="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-700/60 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">
-                            Manufacturer
+                          <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">
+                            Manufacturer / Packer
                           </label>
                           <input
                             type="text"
@@ -655,43 +695,43 @@ export default function LiveInspectionScanner() {
                               const val = e.target.value;
                               setManufacturerInput(val);
                               if (savedData) {
-                                setSavedData(prev => prev ? { ...prev, product: { ...prev.product, manufacturer: val } } : null);
+                                setSavedData((prev) =>
+                                  prev ? { ...prev, product: { ...prev.product, manufacturer: val } } : null
+                                );
                                 updateInspectionProduct(savedData.inspection.id, {
                                   manufacturer: val,
                                 });
                               }
                             }}
-                            className="w-full px-2.5 py-1.5 bg-black/40 border border-white/10 rounded-lg text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                            className="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-700/60 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
                           />
                         </div>
                       </div>
 
                       {/* Action Links */}
                       <div className="flex items-center gap-2 pt-1">
-                        <ClickSpark sparkColor="#818cf8" sparkCount={8} className="flex-1">
-                          <button
-                            onClick={handleGeneratePDF}
-                            className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.01]"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Download PDF Certificate</span>
-                          </button>
-                        </ClickSpark>
-
-                        <Link
-                          href="/inspections"
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border border-white/[0.08] text-xs font-medium transition-colors"
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleGeneratePDF}
+                          className="flex-1 shadow-blue-600/30 text-xs"
                         >
-                          <span>Inspections</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <Download className="w-3.5 h-3.5 mr-1" />
+                          <span>Generate PDF Certificate</span>
+                        </Button>
+
+                        <Link href="/inspections">
+                          <Button variant="outline" size="sm" className="text-xs gap-1">
+                            <span>Register</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
                         </Link>
 
-                        <Link
-                          href={`/inspection/${savedData.inspection.id}`}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border border-white/[0.08] text-xs font-medium transition-colors"
-                        >
-                          <span>Split Audit</span>
-                          <ExternalLink className="w-3 h-3" />
+                        <Link href={`/inspection/${savedData.inspection.id}`}>
+                          <Button variant="outline" size="sm" className="text-xs gap-1">
+                            <span>Split Audit</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
                         </Link>
                       </div>
                     </div>
@@ -701,13 +741,15 @@ export default function LiveInspectionScanner() {
 
               {/* Rule Checklist Header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 font-semibold">
-                  <FileCheck className="w-4 h-4 text-indigo-400" />
-                  <span>Rule Engine Evaluation</span>
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                  <FileCheck className="w-4 h-4 text-blue-400" />
+                  <span>Rule 6 Statutory Audit Checklist</span>
                 </div>
 
                 {results && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       const blob = new Blob([JSON.stringify(results, null, 2)], {
                         type: "application/json",
@@ -718,11 +760,11 @@ export default function LiveInspectionScanner() {
                       a.download = `compliance-${results.filename}.json`;
                       a.click();
                     }}
-                    className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                    className="text-xs text-blue-400 hover:text-blue-300 gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export JSON</span>
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -730,7 +772,7 @@ export default function LiveInspectionScanner() {
               <div className="space-y-3">
                 {results ? (
                   detections.length === 0 ? (
-                    <div className="p-8 rounded-2xl bg-zinc-900/40 border border-white/[0.06] text-center text-zinc-400 text-sm">
+                    <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-slate-400 text-xs">
                       No text detected with high confidence in this image. Ensure the image is well-lit and packaging text is legible.
                     </div>
                   ) : (
@@ -751,7 +793,7 @@ export default function LiveInspectionScanner() {
                         : "major";
 
                       const ruleCodeMap: Record<string, string> = {
-                        "MRP": "LM-R6(1)(a)",
+                        MRP: "LM-R6(1)(a)",
                         "Net Weight": "LM-R6(1)(b)",
                         "Manufacture Date": "LM-R6(1)(d)",
                         "Expire Date": "LM-R6(1)(e)",
@@ -759,12 +801,22 @@ export default function LiveInspectionScanner() {
                       };
 
                       const categoryKey = detection.category || "";
-                      const assignedRuleCode = ruleCodeMap[categoryKey] || `LM-OCR-${String(index + 1).padStart(3, "0")}`;
+                      const assignedRuleCode =
+                        ruleCodeMap[categoryKey] || `LM-OCR-${String(index + 1).padStart(3, "0")}`;
 
-                      // Extract rule and text from "[Category] Text (Message)" format
-                      const parts = detection.label.match(/^\[(.*?)\]\s*(.*?)\s*\((.*?)\)$/) || detection.label.match(/^(.*?)\s*\((.*?)\)$/);
-                      const extractedText = parts ? (parts.length === 4 ? parts[2] : parts[1]) : detection.label;
-                      const ruleMessage = parts ? (parts.length === 4 ? parts[3] : parts[2]) : detection.label;
+                      const parts =
+                        detection.label.match(/^\[(.*?)\]\s*(.*?)\s*\((.*?)\)$/) ||
+                        detection.label.match(/^(.*?)\s*\((.*?)\)$/);
+                      const extractedText = parts
+                        ? parts.length === 4
+                          ? parts[2]
+                          : parts[1]
+                        : detection.label;
+                      const ruleMessage = parts
+                        ? parts.length === 4
+                          ? parts[3]
+                          : parts[2]
+                        : detection.label;
 
                       return (
                         <AccordionCard
@@ -787,13 +839,13 @@ export default function LiveInspectionScanner() {
                     })
                   )
                 ) : (
-                  <div className="p-10 rounded-3xl bg-zinc-900/30 border border-dashed border-white/[0.08] text-center flex flex-col items-center justify-center">
-                    <ScanSearch className="w-10 h-10 text-zinc-600 mb-3" />
-                    <p className="text-zinc-300 font-medium text-sm">
+                  <div className="p-10 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center flex flex-col items-center justify-center">
+                    <ScanSearch className="w-10 h-10 text-slate-600 mb-3" />
+                    <p className="text-slate-300 font-medium text-sm">
                       No analysis performed yet
                     </p>
-                    <p className="text-xs text-zinc-500 mt-1 max-w-sm">
-                      Click &ldquo;Run Backend Analysis&rdquo; to send the package to the Legal Metrology AI engine.
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                      Click &ldquo;Run AI Analysis&rdquo; to execute the Legal Metrology vision pipeline on this package.
                     </p>
                   </div>
                 )}

@@ -1,11 +1,14 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useRef, useState } from "react";
+import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
 export interface BentoCardProps {
   title?: string;
+  subtitle?: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
   delay?: number;
@@ -14,15 +17,17 @@ export interface BentoCardProps {
 
 export function BentoCard({
   title,
+  subtitle,
   icon,
+  action,
   className = "",
   children,
   delay = 0,
-  glowColor = "rgba(99, 102, 241, 0.18)",
+  glowColor = "rgba(37, 99, 235, 0.22)",
 }: BentoCardProps) {
-  const cardRef = React.useRef<HTMLDivElement>(null);
-  const [position, setPosition] = React.useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = React.useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -34,35 +39,49 @@ export function BentoCard({
     <motion.div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setOpacity(0.85)}
+      onMouseEnter={() => setOpacity(1)}
       onMouseLeave={() => setOpacity(0)}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, type: "spring", bounce: 0.3 }}
-      whileHover={{ scale: 1.01 }}
-      className={`relative overflow-hidden rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/[0.08] shadow-xl shadow-black/20 hover:border-white/[0.18] transition-all duration-300 ${className}`}
+      transition={{ duration: 0.45, delay, type: "spring", bounce: 0.2 }}
+      className={cn(
+        "relative overflow-hidden rounded-2xl liquid-glass-card group",
+        className
+      )}
     >
-      {/* React Bits dynamic spotlight effect */}
+      {/* Dynamic Cursor Spotlight (KokonutUI style) */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-out z-0"
         style={{
           opacity,
-          background: `radial-gradient(circle 260px at ${position.x}px ${position.y}px, ${glowColor}, transparent 80%)`,
+          background: `radial-gradient(circle 280px at ${position.x}px ${position.y}px, ${glowColor}, transparent 75%)`,
         }}
       />
 
-      {/* Subtle gradient overlay at top */}
-      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none z-0" />
+      {/* Specular Top-Edge Reflection Line */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-200/20 to-transparent pointer-events-none z-10" />
 
       <div className="p-6 relative z-10 flex flex-col h-full">
-        {(title || icon) && (
-          <div className="flex items-center gap-3 mb-4">
-            {icon && <div className="text-zinc-400">{icon}</div>}
-            {title && (
-              <h3 className="text-zinc-100 font-medium tracking-tight">
-                {title}
-              </h3>
-            )}
+        {(title || icon || action) && (
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              {icon && (
+                <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-blue-400 shadow-sm shadow-blue-950/40">
+                  {icon}
+                </div>
+              )}
+              {title && (
+                <div>
+                  <h3 className="text-slate-100 font-semibold text-sm tracking-tight">
+                    {title}
+                  </h3>
+                  {subtitle && (
+                    <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+                  )}
+                </div>
+              )}
+            </div>
+            {action && <div>{action}</div>}
           </div>
         )}
         <div className="flex-1">{children}</div>
@@ -70,3 +89,5 @@ export function BentoCard({
     </motion.div>
   );
 }
+
+export default BentoCard;

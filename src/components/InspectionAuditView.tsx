@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
   FileCheck,
   Eye,
@@ -19,6 +19,8 @@ import {
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { AccordionCard } from "@/components/AccordionCard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import PackageLabelMockup from "./PackageLabelMockup";
 import {
@@ -69,7 +71,6 @@ export default function InspectionAuditView({
   }, [inspection.id, inspection.imageUrl]);
 
   const handleImgError = async () => {
-    // If it's a remote URL containing /uploads/, fall back to local /uploads/
     const match = displayImgUrl.match(/\/uploads\/([^\/\?#]+)$/);
     if (match && displayImgUrl !== `/uploads/${match[1]}`) {
       setDisplayImgUrl(`/uploads/${match[1]}`);
@@ -94,7 +95,6 @@ export default function InspectionAuditView({
     !displayImgUrl.startsWith("__idb__") &&
     !displayImgUrl.startsWith("__session__");
 
-  // Extract or synthesize bounding boxes for the 5 Legal Metrology categories
   const hasLiveDetections =
     inspection.detections && inspection.detections.length > 0;
 
@@ -201,7 +201,7 @@ export default function InspectionAuditView({
   ];
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 select-none">
       <Sidebar />
       <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">
         <TopBar
@@ -211,27 +211,27 @@ export default function InspectionAuditView({
 
         <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
           {/* Left Panel: High-Resolution Image Viewer with Bounding Boxes */}
-          <div className="col-span-7 relative bg-zinc-950/80 border-r border-white/[0.06] flex flex-col h-full overflow-hidden">
+          <div className="col-span-7 relative bg-slate-950 border-r border-slate-800/80 flex flex-col h-full overflow-hidden">
             {/* Top Toolbar Bar */}
-            <div className="p-4 border-b border-white/[0.06] bg-zinc-900/40 backdrop-blur-md flex items-center justify-between z-20">
-              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
-                <Layers className="w-4 h-4 text-indigo-400" />
-                <span>Product Package Label & OCR Overlay</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            <div className="p-3.5 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md flex items-center justify-between z-20">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <Layers className="w-4 h-4 text-blue-400" />
+                <span>Product Package Label &amp; Spatial Coordinate Map</span>
+                <Badge variant="default" className="text-[10px] font-mono">
                   {hasLiveDetections
                     ? `${inspection.detections?.length} Live OCR Boxes`
-                    : "5 Statutory Rule Overlays"}
-                </span>
+                    : "5 Rule Overlays"}
+                </Badge>
               </div>
 
               {/* Toolbar Controls */}
-              <div className="flex items-center gap-1.5 bg-zinc-900/80 border border-white/10 rounded-xl p-1 shadow-lg">
+              <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/60 rounded-xl p-1 shadow-lg">
                 <button
                   onClick={() => setShowBoxes(!showBoxes)}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                     showBoxes
-                      ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                      : "text-zinc-400 hover:text-zinc-200"
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                   title={showBoxes ? "Hide Bounding Boxes" : "Show Bounding Boxes"}
                 >
@@ -243,11 +243,11 @@ export default function InspectionAuditView({
                   <span>{showBoxes ? "Boxes Visible" : "Boxes Hidden"}</span>
                 </button>
 
-                <div className="w-px h-4 bg-white/10 mx-1" />
+                <div className="w-px h-4 bg-slate-700/60 mx-1" />
 
                 <button
                   onClick={handleZoomIn}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
                   title="Zoom In"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export default function InspectionAuditView({
 
                 <button
                   onClick={handleZoomOut}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
                   title="Zoom Out"
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
@@ -263,13 +263,13 @@ export default function InspectionAuditView({
 
                 <button
                   onClick={handleResetZoom}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
                   title="Reset Zoom"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
 
-                <span className="text-[10px] font-mono text-zinc-400 px-1.5">
+                <span className="text-[10px] font-mono text-slate-400 px-1.5">
                   {Math.round(zoomLevel * 100)}%
                 </span>
               </div>
@@ -278,7 +278,7 @@ export default function InspectionAuditView({
             {/* Main Stage: Image with Visual Bounding Boxes */}
             <div
               ref={imageContainerRef}
-              className="flex-1 overflow-auto p-6 flex items-center justify-center relative bg-gradient-to-b from-zinc-950 via-zinc-900/30 to-zinc-950"
+              className="flex-1 overflow-auto p-6 flex items-center justify-center relative bg-gradient-to-b from-slate-950 via-slate-900/20 to-slate-950"
             >
               <div
                 style={{
@@ -290,7 +290,8 @@ export default function InspectionAuditView({
               >
                 {/* Real Uploaded Photo */}
                 {isRealUploadedImage ? (
-                  <div className="relative inline-block w-fit max-w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900">
+                  <div className="relative inline-block w-fit max-w-full rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={displayImgUrl}
                       alt={product.name}
@@ -313,15 +314,10 @@ export default function InspectionAuditView({
                         const boxW = det.boxWidth !== undefined ? det.boxWidth : (det.box?.width ?? 0);
                         const boxH = det.boxHeight !== undefined ? det.boxHeight : (det.box?.height ?? 0);
 
-                        // If bounding box has 0 width or height or (0,0,0,0), don't render false box
                         if (boxW <= 0 || boxH <= 0 || (boxX === 0 && boxY === 0 && boxW === 0)) {
                           return null;
                         }
 
-                        // Determine coordinate scale:
-                        // 1. If any coordinate exceeds 1000, coordinates are in natural image pixels.
-                        // 2. If legacy mock (x: 50, w: 300), scale is 800.
-                        // 3. Otherwise, scale is 1000-normalized (Gemini standard 0-1000).
                         let scaleW = 1000;
                         let scaleH = 1000;
                         if (boxX > 1000 || boxY > 1000 || boxW > 1000 || boxH > 1000) {
@@ -347,11 +343,11 @@ export default function InspectionAuditView({
                             onMouseEnter={() => setHoveredBox(det)}
                             onMouseLeave={() => setHoveredBox(null)}
                             className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all duration-150 ${
-                              isHovered ? "z-30 ring-2 ring-white/60 shadow-lg" : "z-20"
+                              isHovered ? "z-30 ring-2 ring-blue-400/80 shadow-lg" : "z-20"
                             } ${
                               isPassed
                                 ? "border-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
-                                : "border-rose-500 bg-rose-500/15 hover:bg-rose-500/25"
+                                : "border-red-500 bg-red-500/15 hover:bg-red-500/25"
                             }`}
                             style={{
                               left: `${leftPercent}%`,
@@ -360,47 +356,47 @@ export default function InspectionAuditView({
                               height: `${heightPercent}%`,
                             }}
                           >
-                            <div
+                            <span
                               className={`absolute ${
-                                isNearTop ? "top-1 left-1" : "-top-3 left-0"
-                              } text-[8px] font-mono font-bold px-1.5 py-0.5 rounded shadow text-white whitespace-nowrap pointer-events-none ${
-                                isPassed ? "bg-emerald-600" : "bg-rose-600"
+                                isNearTop ? "-bottom-6" : "-top-6"
+                              } left-0 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded shadow whitespace-nowrap z-30 transition-opacity ${
+                                isHovered ? "opacity-100" : "opacity-85"
+                              } ${
+                                isPassed
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-red-600 text-white"
                               }`}
                             >
-                              {det.category || det.status}: {det.status}
-                            </div>
+                              {det.category || `Box #${idx + 1}`}
+                            </span>
                           </div>
                         );
                       })}
                   </div>
                 ) : (
-                  /* High-Fidelity Package Label Canvas for Seeded Inspections / Fallback */
-                  <div className="relative w-[420px]">
-                    {imgLoadFailed && (
-                      <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2.5 shadow-lg">
-                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>Remote photo snapshot expired • Displaying high-fidelity digital statutory reconstruction</span>
-                      </div>
-                    )}
+                  /* Fallback Mockup Label */
+                  <div className="relative inline-block rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
                     <PackageLabelMockup
                       product={product}
                       inspection={inspection}
                     />
-
-                    {/* Synthetic Bounding Boxes Aligned over Mockup */}
                     {showBoxes &&
                       syntheticBoxes.map((box) => {
                         const isPassed = box.status === "Passed";
+                        const isHovered =
+                          hoveredBox === box || hoveredBox?.category === box.category;
 
                         return (
                           <div
                             key={box.id}
                             onMouseEnter={() => setHoveredBox(box)}
                             onMouseLeave={() => setHoveredBox(null)}
-                            className={`absolute border-2 border-dashed rounded-lg cursor-pointer transition-all duration-150 z-20 ${
+                            className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all ${
+                              isHovered ? "z-30 ring-2 ring-blue-400/80 shadow-lg" : "z-20"
+                            } ${
                               isPassed
-                                ? "border-emerald-500 bg-emerald-500/15 hover:bg-emerald-500/25"
-                                : "border-rose-500 bg-rose-500/20 hover:bg-rose-500/30"
+                                ? "border-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
+                              : "border-red-500 bg-red-500/15 hover:bg-red-500/25"
                             }`}
                             style={{
                               left: `${box.left}%`,
@@ -409,13 +405,13 @@ export default function InspectionAuditView({
                               height: `${box.height}%`,
                             }}
                           >
-                            <div
-                              className={`absolute -top-3 left-1 text-[8px] font-mono font-bold px-1.5 py-0.5 rounded shadow text-white whitespace-nowrap ${
-                                isPassed ? "bg-emerald-600" : "bg-rose-600"
+                            <span
+                              className={`absolute -top-5 left-0 text-[9px] font-mono font-semibold px-1 py-0.5 rounded shadow whitespace-nowrap z-30 ${
+                                isPassed ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
                               }`}
                             >
-                              {box.category}: {box.status}
-                            </div>
+                              {box.category}
+                            </span>
                           </div>
                         );
                       })}
@@ -423,37 +419,27 @@ export default function InspectionAuditView({
                 )}
               </div>
 
-              {/* Hover Floating Information Tooltip */}
+              {/* Floating Tooltip when hovering over a Bounding Box */}
               <AnimatePresence>
                 {hoveredBox && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="absolute top-6 left-6 right-6 z-30 bg-zinc-950/95 backdrop-blur-xl border border-white/15 rounded-2xl p-3.5 text-xs shadow-2xl pointer-events-none"
+                    className="absolute bottom-6 left-6 z-40 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 p-3.5 rounded-xl shadow-2xl max-w-sm"
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          hoveredBox.status === "Passed"
-                            ? "bg-emerald-400"
-                            : "bg-rose-500"
-                        }`}
-                      />
-                      <span className="font-bold text-zinc-100 uppercase tracking-wide">
-                        {hoveredBox.category || hoveredBox.ruleCode || "Declaration"}
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                      <span className="text-xs font-bold text-slate-100">
+                        {hoveredBox.category || "Statutory Declaration"}
                       </span>
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                          hoveredBox.status === "Passed"
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-rose-500/20 text-rose-300"
-                        }`}
+                      <Badge
+                        variant={hoveredBox.status === "Passed" ? "success" : "destructive"}
+                        className="text-[10px]"
                       >
                         {hoveredBox.status}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="text-zinc-300 font-mono text-xs break-words">
+                    <p className="text-slate-300 font-mono text-xs break-words">
                       {hoveredBox.label}
                     </p>
                   </motion.div>
@@ -463,85 +449,86 @@ export default function InspectionAuditView({
           </div>
 
           {/* Right Panel: Statutory Rule Checklist & Inspection Details */}
-          <div className="col-span-5 bg-zinc-900/40 overflow-y-auto p-6 flex flex-col gap-6 h-full">
+          <div className="col-span-5 bg-slate-900/30 overflow-y-auto p-6 flex flex-col gap-6 h-full">
             {/* Header Product Card */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-zinc-800/40 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-5 shadow-xl"
+              className="liquid-glass-card rounded-2xl p-5 shadow-xl"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-zinc-100 font-bold text-lg leading-tight">
+                  <h3 className="text-slate-100 font-bold text-base leading-tight">
                     {product.name}
                   </h3>
-                  <p className="text-zinc-400 text-xs mt-0.5">
+                  <p className="text-slate-400 text-xs mt-0.5">
                     {product.manufacturer}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    variant="default"
+                    size="sm"
                     onClick={() =>
                       generateInspectionPDF({ inspection, product, violations })
                     }
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition-all hover:scale-[1.02]"
+                    className="shadow-blue-600/30 text-xs gap-1"
                     title="Generate and Download Official PDF Certificate"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>PDF Report</span>
-                  </button>
+                  </Button>
 
-                  <div
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${
-                      inspection.status === "completed"
-                        ? violations.length === 0
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                        : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                    }`}
+                  <Badge
+                    variant={
+                      violations.length === 0
+                        ? "success"
+                        : "destructive"
+                    }
+                    className="text-xs uppercase"
                   >
                     {violations.length === 0
                       ? "COMPLIANT"
                       : `${violations.length} VIOLATION${violations.length > 1 ? "S" : ""}`}
-                  </div>
+                  </Badge>
                 </div>
               </div>
 
               {/* Inspection Details Grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs pt-3 border-t border-white/[0.06]">
-                <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <p className="text-zinc-500 text-[10px] uppercase font-semibold">
+              <div className="grid grid-cols-2 gap-2.5 text-xs pt-3 border-t border-slate-800/80">
+                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-slate-500 text-[10px] uppercase font-semibold">
                     Inspection ID
                   </p>
-                  <p className="text-indigo-300 font-mono font-bold mt-0.5">
+                  <p className="text-blue-400 font-mono font-bold mt-0.5">
                     {inspection.id}
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <p className="text-zinc-500 text-[10px] uppercase font-semibold">
+                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-slate-500 text-[10px] uppercase font-semibold">
                     Batch / Lot No
                   </p>
-                  <p className="text-zinc-300 font-mono font-medium mt-0.5">
+                  <p className="text-slate-300 font-mono font-medium mt-0.5">
                     {product.batchNo}
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <p className="text-zinc-500 text-[10px] uppercase font-semibold">
+                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-slate-500 text-[10px] uppercase font-semibold">
                     Enforcement Officer
                   </p>
-                  <p className="text-zinc-300 font-medium mt-0.5">
+                  <p className="text-slate-300 font-medium mt-0.5">
                     {inspection.inspector}
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <p className="text-zinc-500 text-[10px] uppercase font-semibold">
-                    Audit Date & Zone
+                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-slate-500 text-[10px] uppercase font-semibold">
+                    Audit Date &amp; Zone
                   </p>
-                  <p className="text-zinc-300 font-medium mt-0.5">
+                  <p className="text-slate-300 font-medium mt-0.5 truncate">
                     {inspection.date} • {inspection.location}
                   </p>
                 </div>
@@ -551,12 +538,12 @@ export default function InspectionAuditView({
             {/* Live Detected Statutory Declarations */}
             {hasLiveDetections && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                     Detected Declarations ({inspection.detections?.length})
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-500">
+                  <span className="text-[10px] font-mono text-slate-500">
                     Hover to highlight on photo
                   </span>
                 </div>
@@ -569,27 +556,24 @@ export default function InspectionAuditView({
                         key={det.id || idx}
                         onMouseEnter={() => setHoveredBox(det)}
                         onMouseLeave={() => setHoveredBox(null)}
-                        className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                        className={`p-3 rounded-xl border transition-all cursor-pointer ${
                           isHovered
-                            ? "bg-zinc-800 border-indigo-500/50 shadow-lg shadow-indigo-500/10 scale-[1.01]"
-                            : "bg-zinc-900/60 border-white/[0.06] hover:bg-zinc-800/60"
+                            ? "bg-slate-800/90 border-blue-500/50 shadow-lg shadow-blue-950/40"
+                            : "bg-slate-900/50 border-slate-800/80 hover:bg-slate-850"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-zinc-200">
+                          <span className="text-xs font-semibold text-slate-200">
                             {det.category || "Declaration"}
                           </span>
-                          <span
-                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                              isPassed
-                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
-                                : "bg-rose-500/15 text-rose-300 border border-rose-500/20"
-                            }`}
+                          <Badge
+                            variant={isPassed ? "success" : "destructive"}
+                            className="text-[10px]"
                           >
                             {det.status}
-                          </span>
+                          </Badge>
                         </div>
-                        <p className="text-xs text-zinc-400 font-mono line-clamp-2">
+                        <p className="text-xs text-slate-400 font-mono line-clamp-2">
                           {det.label || "No text extracted"}
                         </p>
                       </div>
@@ -601,27 +585,27 @@ export default function InspectionAuditView({
 
             {/* Checklist Section Title */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 font-semibold">
-                <FileCheck className="w-4 h-4 text-indigo-400" />
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                <FileCheck className="w-4 h-4 text-blue-400" />
                 <span>Statutory Rule Verification</span>
               </div>
-              <span className="text-[11px] font-mono text-zinc-500">
-                Legal Metrology Rules, 2011
+              <span className="text-[11px] font-mono text-slate-500">
+                PCR 2011 Rule 6
               </span>
             </div>
 
             {/* Violations or Statutory Checks Accordion */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {violations.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs space-y-2">
+                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs space-y-2">
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <span>All Mandatory Declarations Fully Compliant</span>
                   </div>
-                  <p className="text-zinc-400 leading-relaxed">
+                  <p className="text-slate-400 leading-relaxed">
                     This packaged commodity complies with all statutory declarations
                     under Rule 6 of the Legal Metrology (Packaged Commodities)
-                    Rules, 2011. MRP inclusive of taxes, net weight standard units,
+                    Rules, 2011. MRP inclusive of taxes, net quantity standard units,
                     date of packing, expiry period, and consumer helpline are all
                     validly declared.
                   </p>
@@ -650,45 +634,47 @@ export default function InspectionAuditView({
 
             {/* Bottom KPI Bar */}
             <div className="mt-auto pt-4">
-              <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/[0.08] shadow-xl flex items-center justify-between">
+              <div className="p-4 rounded-2xl liquid-glass-card shadow-xl flex items-center justify-between">
                 <div className="flex gap-4 text-xs">
                   <div>
-                    <span className="text-zinc-500 uppercase block text-[10px]">
+                    <span className="text-slate-500 uppercase block text-[10px] font-semibold">
                       Pass
                     </span>
                     <span className="text-emerald-400 font-bold font-mono text-base">
                       {Math.max(5 - violations.length, 0)}
                     </span>
                   </div>
-                  <div className="w-px h-7 bg-white/[0.08]" />
+                  <div className="w-px h-7 bg-slate-800" />
                   <div>
-                    <span className="text-zinc-500 uppercase block text-[10px]">
+                    <span className="text-slate-500 uppercase block text-[10px] font-semibold">
                       Violations
                     </span>
-                    <span className="text-rose-400 font-bold font-mono text-base">
+                    <span className="text-red-400 font-bold font-mono text-base">
                       {violations.length}
                     </span>
                   </div>
-                  <div className="w-px h-7 bg-white/[0.08]" />
+                  <div className="w-px h-7 bg-slate-800" />
                   <div>
-                    <span className="text-zinc-500 uppercase block text-[10px]">
+                    <span className="text-slate-500 uppercase block text-[10px] font-semibold">
                       Score
                     </span>
-                    <span className="text-zinc-100 font-bold font-mono text-base">
+                    <span className="text-slate-100 font-bold font-mono text-base">
                       {inspection.complianceScore || compliancePercentage}%
                     </span>
                   </div>
                 </div>
 
-                <button
+                <Button
+                  variant="default"
+                  size="sm"
                   onClick={() =>
                     generateInspectionPDF({ inspection, product, violations })
                   }
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
+                  className="shadow-blue-600/30 text-xs gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download PDF Certificate</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>

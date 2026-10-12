@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
-/* ─── Design Tokens (Tailwind v4 CSS-first config) ─────────────────── */
+/* ─── Cobalt Precision Design Tokens (Tailwind v4 CSS-first config) ──── */
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter);
 
-  /* Semantic Colors */
-  --color-surface: rgba(24, 24, 27, 0.5);
-  --color-surface-raised: rgba(39, 39, 42, 0.5);
-  --color-surface-overlay: rgba(9, 9, 11, 0.8);
-  --color-glass-border: rgba(255, 255, 255, 0.08);
-  --color-glass-border-hover: rgba(255, 255, 255, 0.15);
+  /* Semantic Base Surfaces */
+  --color-surface: rgba(15, 23, 42, 0.6);
+  --color-surface-raised: rgba(30, 41, 59, 0.5);
+  --color-surface-overlay: rgba(2, 6, 23, 0.85);
+  --color-glass-border: rgba(148, 163, 184, 0.08);
+  --color-glass-border-hover: rgba(148, 163, 184, 0.18);
 
-  /* Accent Palette */
-  --color-primary: #6366f1;
-  --color-primary-light: #818cf8;
-  --color-compliance: #34d399;
-  --color-compliance-light: #6ee7b7;
-  --color-violation: #fb7185;
-  --color-violation-light: #fda4af;
-  --color-warning: #fbbf24;
-  --color-warning-light: #fcd34d;
+  /* Cobalt Primary Palette */
+  --color-primary: #2563eb;
+  --color-primary-hover: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-primary-muted: rgba(37, 99, 235, 0.15);
+  --color-primary-glow: rgba(37, 99, 235, 0.25);
+
+  /* Regulatory Status Palette */
+  --color-compliance: #22c55e;
+  --color-compliance-light: #4ade80;
+  --color-violation: #ef4444;
+  --color-violation-light: #f87171;
+  --color-warning: #eab308;
+  --color-warning-light: #facc15;
+  --color-info: #06b6d4;
+  --color-info-light: #22d3ee;
+
+  /* Chart Colors */
+  --color-chart-1: #2563eb;
+  --color-chart-2: #06b6d4;
+  --color-chart-3: #8b5cf6;
+  --color-chart-4: #22c55e;
+  --color-chart-5: #f59e0b;
+}
+
+/* ─── CSS Variables Root ───────────────────────────────────────────── */
+:root {
+  --background: #09090b;
+  --foreground: #f1f5f9;
+  --muted: #94a3b8;
+  --subtle: #64748b;
+
+  --chart-1: #2563eb;
+  --chart-2: #06b6d4;
+  --chart-3: #8b5cf6;
+  --chart-4: #22c55e;
+  --chart-5: #f59e0b;
 }
 
 /* ─── Base Styles ──────────────────────────────────────────────────── */
@@ -38,15 +66,15 @@ html {
 
 body {
   background: #09090b;
-  color: #fafafa;
+  color: #f1f5f9;
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
 
-/* ─── Custom Scrollbar ─────────────────────────────────────────────── */
+/* ─── Precision Scrollbar ──────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -54,72 +82,138 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(161, 161, 170, 0.2);
-  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(161, 161, 170, 0.4);
+  background: rgba(148, 163, 184, 0.35);
 }
 
-/* ─── Utility Classes ──────────────────────────────────────────────── */
+/* ─── Liquid Glass Surface Classes ─────────────────────────────────── */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.08);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
+/* Liquid Glass with Specular Edge Highlight */
+.liquid-glass-card {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.35) 0%,
+    rgba(15, 23, 42, 0.55) 100%
+  );
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(148, 163, 184, 0.09);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 10px 30px -10px rgba(2, 6, 23, 0.6),
+    inset 0 1px 0 rgba(191, 219, 254, 0.07);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-glass-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 
+    0 4px 20px -2px rgba(0, 0, 0, 0.5),
+    0 16px 40px -12px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(191, 219, 254, 0.14);
+}
+
+/* Bento Tile Standard */
 .bento-card {
-  background: rgba(24, 24, 27, 0.5);
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.25) 0%,
+    rgba(15, 23, 42, 0.45) 100%
+  );
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2),
-    0 8px 10px -6px rgba(0, 0, 0, 0.2);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .bento-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border-color: rgba(148, 163, 184, 0.16);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5), 0 0 20px -4px rgba(37, 99, 235, 0.12);
 }
 
-/* ─── Text Gradient Utility ────────────────────────────────────────── */
+/* ─── Typography Accents ───────────────────────────────────────────── */
 .text-gradient {
-  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #93c5fd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ─── Glow Effects ─────────────────────────────────────────────────── */
-.glow-indigo {
-  box-shadow: 0 0 30px -5px rgba(99, 102, 241, 0.15);
+.text-gradient-subtle {
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.glow-emerald {
-  box-shadow: 0 0 30px -5px rgba(52, 211, 153, 0.15);
+/* ─── Spatial Glow Effects ─────────────────────────────────────────── */
+.glow-cobalt {
+  box-shadow: 0 0 30px -5px rgba(37, 99, 235, 0.22);
 }
 
-.glow-rose {
-  box-shadow: 0 0 30px -5px rgba(251, 113, 133, 0.15);
+.glow-compliance {
+  box-shadow: 0 0 30px -5px rgba(34, 197, 94, 0.2);
 }
 
-/* ─── Recharts Custom Tooltip ──────────────────────────────────────── */
+.glow-violation {
+  box-shadow: 0 0 30px -5px rgba(239, 68, 68, 0.2);
+}
+
+.glow-warning {
+  box-shadow: 0 0 30px -5px rgba(234, 179, 8, 0.2);
+}
+
+/* ─── Recharts / BKLIT Custom Tooltip ──────────────────────────────── */
 .recharts-custom-tooltip {
-  background: rgba(24, 24, 27, 0.9) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
   border-radius: 12px !important;
-  padding: 12px 16px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3) !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 16px 32px -6px rgba(0, 0, 0, 0.6), 0 0 20px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* ─── Scanner Sweep Animation (Anime.js / CSS fallback) ────────────── */
+@keyframes scanSweep {
+  0% {
+    top: 0%;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 98%;
+    opacity: 0.8;
+  }
+}
+
+.scanner-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #3b82f6, transparent);
+  box-shadow: 0 0 16px 3px rgba(37, 99, 235, 0.6);
+  animation: scanSweep 2.2s ease-in-out infinite alternate;
 }

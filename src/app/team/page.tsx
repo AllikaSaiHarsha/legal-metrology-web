@@ -3,8 +3,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
-import { Users, Plus, ShieldCheck, Mail, Lock, User, MoreVertical, Trash2, Edit2, Activity, X } from "lucide-react";
+import {
+  Users,
+  Plus,
+  ShieldCheck,
+  Mail,
+  Lock,
+  User,
+  Trash2,
+  Edit2,
+  Activity,
+  X,
+  ShieldAlert,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "motion/react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface UserAccount {
   id: string;
@@ -19,7 +34,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState("");
-  
+
   // Form State
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
   const [editId, setEditId] = useState("");
@@ -30,7 +45,6 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false);
 
   const isAdmin = (session?.user as any)?.role === "admin";
-
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -65,7 +79,7 @@ export default function TeamPage() {
     setEditId(user.id);
     setName(user.name);
     setEmail(user.email);
-    setPassword(""); // leave blank unless changing
+    setPassword("");
     setRole(user.role);
     setError("");
     setIsModalOpen(true);
@@ -73,7 +87,7 @@ export default function TeamPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    
+
     try {
       const res = await fetch(`/api/db/users/${id}`, {
         method: "DELETE",
@@ -134,77 +148,108 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
       <Sidebar />
       <main className="flex-1 ml-72">
-        <TopBar title="Team Management" subtitle="Manage inspectors and admins" />
-        
-        <div className="p-8 max-w-6xl mx-auto space-y-8">
-          <div className="flex items-center justify-between">
+        <TopBar
+          title="Team Management"
+          subtitle="Enforcement officer RBAC directory and access provisioning"
+        />
+
+        <div className="p-8 max-w-7xl space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl liquid-glass-card">
             <div>
-              <h2 className="text-2xl font-bold text-white">System Users</h2>
-              <p className="text-zinc-400 mt-1">Manage access for enforcement officers</p>
+              <h2 className="text-base font-bold text-slate-100 tracking-tight">
+                Authorized Personnel Roster
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Manage access roles, field inspector accounts, and administrative authority
+              </p>
             </div>
             {isAdmin && (
-              <button
+              <Button
+                variant="default"
+                size="sm"
                 onClick={openAddModal}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-600/20"
+                className="shadow-blue-600/30 gap-1.5 text-xs"
               >
-                <Plus className="w-4 h-4" />
-                Add User
-              </button>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Officer</span>
+              </Button>
             )}
           </div>
 
           {!isAdmin && (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-3 text-amber-500">
-              <ShieldCheck className="w-5 h-5 shrink-0" />
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/25 rounded-2xl flex items-start gap-3 text-yellow-400">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-sm">Admin Access Required</h3>
-                <p className="text-sm mt-1 opacity-80">You can view the team, but only administrators can add, edit, or delete users.</p>
+                <h3 className="font-semibold text-xs uppercase tracking-wider">
+                  Inspector Tier View Only
+                </h3>
+                <p className="text-xs mt-1 text-slate-300">
+                  You are signed in as an Inspector. Administrative rights are required to provision, modify, or revoke user accounts.
+                </p>
               </div>
             </div>
           )}
 
           {loading ? (
-            <div className="animate-pulse space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-20 bg-white/5 rounded-2xl"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-44 bg-slate-900/40 rounded-2xl border border-slate-800/80" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {users.map((user) => (
-                <div key={user.id} className="bg-zinc-900/60 border border-white/[0.08] p-6 rounded-2xl flex flex-col justify-between group hover:border-indigo-500/30 transition-all">
+                <div
+                  key={user.id}
+                  className="rounded-2xl liquid-glass-card p-5 flex flex-col justify-between group hover:border-blue-500/30"
+                >
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-lg">
+                      <div className="w-12 h-12 rounded-full bg-blue-600/15 border border-blue-500/25 flex items-center justify-center text-blue-400 font-bold text-base shadow-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
-                      
+
                       {isAdmin && (
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openEditModal(user)} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                            <Edit2 className="w-4 h-4" />
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Edit User"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => handleDelete(user.id)} className="p-2 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all">
-                            <Trash2 className="w-4 h-4" />
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       )}
                     </div>
-                    <h3 className="text-lg font-semibold text-white">{user.name}</h3>
-                    <div className="flex items-center gap-2 text-zinc-400 text-sm mt-2">
-                      <Mail className="w-4 h-4" />
-                      {user.email}
+
+                    <h3 className="text-sm font-bold text-slate-100">{user.name}</h3>
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs mt-1.5">
+                      <Mail className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="font-mono text-[11px] truncate">{user.email}</span>
                     </div>
                   </div>
-                  <div className="mt-6 flex items-center justify-between pt-4 border-t border-white/[0.04]">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${user.role === 'admin' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
-                      {user.role.toUpperCase()}
-                    </span>
+
+                  <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                    <Badge
+                      variant={user.role === "admin" ? "destructive" : "default"}
+                      className="text-[10px] uppercase font-mono"
+                    >
+                      {user.role}
+                    </Badge>
                     {(session?.user as any)?.id === user.id && (
-                      <span className="text-xs text-zinc-500">You</span>
+                      <span className="text-[11px] text-blue-400 font-semibold font-mono">
+                        (Active Session)
+                      </span>
                     )}
                   </div>
                 </div>
@@ -215,72 +260,131 @@ export default function TeamPage() {
       </main>
 
       {/* Add / Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-white/[0.08] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/[0.08] flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">
-                {formMode === "add" ? "Add New User" : "Edit User"}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {error && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  {error}
-                </div>
-              )}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="fixed inset-0 bg-black/75 backdrop-blur-md"
+            />
 
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">Full Name</label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input required type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">
-                  Password {formMode === "edit" && "(Leave blank to keep current)"}
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input required={formMode === "add"} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">Role</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none appearance-none">
-                  <option value="inspector">Inspector</option>
-                  <option value="admin">Administrator</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:bg-white/5 transition-all">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50">
-                  {saving ? "Saving..." : "Save User"}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden z-10"
+            >
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-100">
+                  {formMode === "add" ? "Provision New Officer" : "Edit Officer Record"}
+                </h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                {error && (
+                  <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/25 text-red-300 text-xs flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-red-400" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    Officer Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-slate-950/80 border border-slate-700/70 rounded-xl py-2 pl-9 pr-3.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    Official Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-slate-950/80 border border-slate-700/70 rounded-xl py-2 pl-9 pr-3.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    Security Password {formMode === "edit" && "(Leave blank to keep current)"}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required={formMode === "add"}
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-slate-950/80 border border-slate-700/70 rounded-xl py-2 pl-9 pr-3.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    Enforcement Role
+                  </label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full bg-slate-950/80 border border-slate-700/70 rounded-xl py-2 px-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  >
+                    <option value="inspector">Inspector (Field Enforcement)</option>
+                    <option value="admin">Administrator (Supervisory / RBAC)</option>
+                  </select>
+                </div>
+
+                <div className="pt-3 flex gap-2.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="default"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    size="default"
+                    disabled={saving}
+                    className="flex-1 shadow-blue-600/30 text-xs"
+                  >
+                    {saving ? "Saving..." : "Save Record"}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

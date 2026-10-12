@@ -1,10 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { motion } from "motion/react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
-import { AlertTriangle, Search, Activity, Package, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { BentoCard } from "@/components/BentoCard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  AlertTriangle,
+  Search,
+  Activity,
+  Package,
+  ExternalLink,
+  ShieldAlert,
+  Flame,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 interface Violation {
   id: string;
@@ -48,138 +70,231 @@ export default function ViolationsPage() {
       }
     };
     fetchViolations();
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  const getSeverityStyle = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case "high":
-        return "bg-rose-500/10 text-rose-500 border border-rose-500/20";
-      case "medium":
-        return "bg-amber-500/10 text-amber-500 border border-amber-500/20";
-      case "low":
-        return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
-      default:
-        return "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20";
-    }
-  };
+  const filteredViolations = violations.filter((v) => {
+    const matchesSearch =
+      v.ruleTitle.toLowerCase().includes(search.toLowerCase()) ||
+      v.description.toLowerCase().includes(search.toLowerCase()) ||
+      v.inspection?.product?.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSeverity =
+      filterSeverity === "all" || v.severity.toLowerCase() === filterSeverity.toLowerCase();
 
-  const filteredViolations = violations.filter(v => {
-    const matchesSearch = v.ruleTitle.toLowerCase().includes(search.toLowerCase()) || 
-                          v.description.toLowerCase().includes(search.toLowerCase()) ||
-                          v.inspection?.product?.name.toLowerCase().includes(search.toLowerCase());
-    const matchesSeverity = filterSeverity === "all" || v.severity.toLowerCase() === filterSeverity.toLowerCase();
-    
     return matchesSearch && matchesSeverity;
   });
 
+  const highCount = violations.filter((v) => v.severity.toLowerCase() === "high").length;
+  const medCount = violations.filter((v) => v.severity.toLowerCase() === "medium").length;
+  const lowCount = violations.filter((v) => v.severity.toLowerCase() === "low").length;
+
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
       <Sidebar />
       <main className="flex-1 ml-72">
-        <TopBar title="Violations Database" subtitle="All recorded offenses across inspections" />
-        
-        <div className="p-8 max-w-6xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Detected Violations</h2>
-              <p className="text-zinc-400 mt-1">Detailed list of non-compliant items</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <select 
-                value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
-                className="bg-zinc-900/50 border border-white/10 rounded-xl py-2 px-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 appearance-none"
-              >
-                <option value="all">All Severities</option>
-                <option value="high">High Severity</option>
-                <option value="medium">Medium Severity</option>
-                <option value="low">Low Severity</option>
-              </select>
+        <TopBar
+          title="Violations Database"
+          subtitle="Non-compliance offenses and statutory infractions recorded under PCR 2011"
+        />
 
-              <div className="relative">
-                <Search className="w-5 h-5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text" 
-                  placeholder="Search violations..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="bg-zinc-900/50 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 w-64"
-                />
+        <div className="p-8 max-w-7xl space-y-6">
+          {/* Top Severity Breakdown Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <BentoCard delay={0.05} glowColor="rgba(239, 68, 68, 0.2)">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Total Infractions
+                  </p>
+                  <p className="text-2xl font-bold text-slate-100 mt-1 font-mono">
+                    {violations.length}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center text-red-400">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
               </div>
+            </BentoCard>
+
+            <BentoCard delay={0.1} glowColor="rgba(239, 68, 68, 0.25)">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    High Severity
+                  </p>
+                  <p className="text-2xl font-bold text-red-400 mt-1 font-mono">{highCount}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <Flame className="w-5 h-5" />
+                </div>
+              </div>
+            </BentoCard>
+
+            <BentoCard delay={0.15} glowColor="rgba(234, 179, 8, 0.2)">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Medium Severity
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-400 mt-1 font-mono">{medCount}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-yellow-500/15 border border-yellow-500/25 flex items-center justify-center text-yellow-400">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+              </div>
+            </BentoCard>
+
+            <BentoCard delay={0.2} glowColor="rgba(37, 99, 235, 0.2)">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                    Minor / Technical
+                  </p>
+                  <p className="text-2xl font-bold text-blue-400 mt-1 font-mono">{lowCount}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/25 flex items-center justify-center text-blue-400">
+                  <Activity className="w-5 h-5" />
+                </div>
+              </div>
+            </BentoCard>
+          </div>
+
+          {/* Search & Severity Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl liquid-glass-card">
+            <div className="relative flex-1 max-w-md w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search violations, rule codes, or commodity name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-900/70 border border-slate-700/60 rounded-xl text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60 transition-all"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={filterSeverity === "all" ? "default" : "secondary"}
+                size="sm"
+                onClick={() => setFilterSeverity("all")}
+                className="text-xs"
+              >
+                All
+              </Button>
+              <Button
+                variant={filterSeverity === "high" ? "destructive" : "secondary"}
+                size="sm"
+                onClick={() => setFilterSeverity("high")}
+                className="text-xs"
+              >
+                High
+              </Button>
+              <Button
+                variant={filterSeverity === "medium" ? "warning" : "secondary"}
+                size="sm"
+                onClick={() => setFilterSeverity("medium")}
+                className="text-xs"
+              >
+                Medium
+              </Button>
+              <Button
+                variant={filterSeverity === "low" ? "default" : "secondary"}
+                size="sm"
+                onClick={() => setFilterSeverity("low")}
+                className="text-xs"
+              >
+                Low
+              </Button>
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/[0.04] bg-zinc-900/40">
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Severity</th>
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Rule Broken</th>
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Product</th>
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status</th>
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Date</th>
-                    <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.02]">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-zinc-500">
-                        Loading violations...
-                      </td>
-                    </tr>
-                  ) : filteredViolations.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-zinc-500">
-                        <AlertTriangle className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                        No violations found.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredViolations.map((v) => (
-                      <tr key={v.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-6">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${getSeverityStyle(v.severity)}`}>
+          {/* Table */}
+          <div className="rounded-2xl liquid-glass-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Statutory Infraction</TableHead>
+                  <TableHead>Packaged Commodity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Logged Date</TableHead>
+                  <TableHead className="text-right">Inspection Link</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-slate-500 text-xs">
+                      Loading statutory violations...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredViolations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-slate-500 text-xs">
+                      <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-500" />
+                      No violations found matching the specified criteria.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredViolations.map((v) => {
+                    const sev = v.severity.toLowerCase();
+                    const badgeVariant =
+                      sev === "high" ? "destructive" : sev === "medium" ? "warning" : "default";
+
+                    return (
+                      <TableRow key={v.id}>
+                        <TableCell>
+                          <Badge variant={badgeVariant} className="uppercase text-[10px]">
                             {v.severity}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="text-sm font-medium text-white">{v.ruleTitle}</div>
-                          <div className="text-xs text-zinc-500 mt-1 max-w-xs truncate" title={v.description}>{v.description}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2 text-sm text-zinc-300">
-                            <Package className="w-4 h-4 text-zinc-500" />
-                            <span className="truncate max-w-[150px]">{v.inspection?.product?.name || "Unknown"}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-zinc-300 capitalize">{v.status || "Pending"}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-zinc-400">
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <p className="font-semibold text-xs text-slate-100">{v.ruleTitle}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                            {v.description}
+                          </p>
+                        </TableCell>
+
+                        <TableCell className="text-xs text-slate-200 font-medium">
+                          {v.inspection?.product?.name || "Packaged Commodity"}
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px]">
+                            {v.status || "Active"}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell className="text-slate-400 font-mono text-xs">
                           {new Date(v.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <Link 
-                            href={`/inspection/${v.inspection?.id}`}
-                            className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                            title="View Inspection"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {v.inspection?.id ? (
+                            <Link href={`/inspection/${v.inspection.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs text-blue-400 hover:text-blue-300 gap-1"
+                              >
+                                <span>Audit {v.inspection.id.slice(0, 8)}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-slate-500 font-mono">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
       </main>
