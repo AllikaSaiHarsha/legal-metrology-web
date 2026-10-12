@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,8 +21,6 @@ export const metadata: Metadata = {
     "India",
   ],
 };
-
-import AuthProvider from "@/components/AuthProvider";
 
 export default function RootLayout({
   children,
