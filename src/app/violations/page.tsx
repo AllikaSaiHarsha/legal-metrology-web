@@ -26,7 +26,9 @@ import {
   Flame,
   AlertCircle,
   CheckCircle2,
+  Scale,
 } from "lucide-react";
+import StatutoryNoticeModal from "@/components/StatutoryNoticeModal";
 
 interface Violation {
   id: string;
@@ -48,6 +50,7 @@ export default function ViolationsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
+  const [selectedViolationForNotice, setSelectedViolationForNotice] = useState<Violation | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -274,20 +277,33 @@ export default function ViolationsPage() {
                         </TableCell>
 
                         <TableCell className="text-right">
-                          {v.inspection?.id ? (
-                            <Link href={`/inspection/${v.inspection.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-blue-400 hover:text-blue-300 gap-1"
-                              >
-                                <span>Audit {v.inspection.id.slice(0, 8)}</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-500 font-mono">—</span>
-                          )}
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedViolationForNotice(v)}
+                              className="text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-1"
+                              title="Generate Statutory Form VI Notice / Compounding Assessment"
+                            >
+                              <Scale className="w-3.5 h-3.5" />
+                              <span>Notice</span>
+                            </Button>
+
+                            {v.inspection?.id ? (
+                              <Link href={`/inspection/${v.inspection.id}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-blue-400 hover:text-blue-300 gap-1"
+                                >
+                                  <span>Audit</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-slate-500 font-mono">—</span>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -298,6 +314,64 @@ export default function ViolationsPage() {
           </div>
         </div>
       </main>
+
+      {selectedViolationForNotice && (() => {
+        const mappedSeverity: "critical" | "major" | "minor" =
+          selectedViolationForNotice.severity === "high"
+            ? "critical"
+            : selectedViolationForNotice.severity === "medium"
+            ? "major"
+            : "minor";
+
+        const mappedStatus: "open" | "resolved" | "under-review" =
+          selectedViolationForNotice.status === "resolved"
+            ? "resolved"
+            : selectedViolationForNotice.status === "under-review"
+            ? "under-review"
+            : "open";
+
+        return (
+          <StatutoryNoticeModal
+            isOpen={Boolean(selectedViolationForNotice)}
+            onClose={() => setSelectedViolationForNotice(null)}
+            inspection={{
+              id: selectedViolationForNotice.inspection?.id || "INSP-REF",
+              productId: "PRD-REF",
+              inspector: "Authorized Enforcement Officer",
+              date: new Date(selectedViolationForNotice.createdAt).toISOString().split("T")[0],
+              location: "District Commercial Inspection Zone",
+              status: "completed",
+              imageUrl: "",
+              findings: ["Statutory label declaration defect"],
+              complianceScore: 40,
+            }}
+            product={{
+              id: "PRD-REF",
+              name: selectedViolationForNotice.inspection?.product?.name || "Packaged Commodity",
+              category: "Commercial Goods",
+              manufacturer: "M/s Packaged Commodity Trading Entity",
+              mfgDate: "2024-01-01",
+              expiryDate: "2026-01-01",
+              batchNo: "BATCH-REF",
+              netQuantity: "Standard",
+              mrp: 100,
+              complianceStatus: "non-compliant",
+            }}
+            violations={[
+              {
+                id: selectedViolationForNotice.id,
+                inspectionId: selectedViolationForNotice.inspection?.id || "INSP-REF",
+                ruleCode: "PCR-2011",
+                ruleTitle: selectedViolationForNotice.ruleTitle,
+                description: selectedViolationForNotice.description,
+                severity: mappedSeverity,
+                remediation: "Rectify statutory label declaration under PCR Rule 6",
+                status: mappedStatus,
+              },
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 }

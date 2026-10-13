@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Inspection, Product, Violation } from "./inspectionsStore";
+import { StatutoryNoticeData, STATUTORY_PENALTY_RATES } from "./statutoryNotices";
 
 export interface PDFReportOptions {
   inspection: Inspection;
@@ -327,3 +328,272 @@ export function generateInspectionPDF(options: PDFReportOptions): void {
   const cleanFilename = `Legal-Metrology-Report-${inspection.id}.pdf`;
   doc.save(cleanFilename);
 }
+
+export function generateStatutoryNoticePDF(data: StatutoryNoticeData): void {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Colors
+  const darkCrimson = [136, 19, 55]; // #881337 - Official legal crimson
+  const navyDark = [15, 23, 42]; // #0f172a
+  const amberGold = [217, 119, 6]; // #d97706
+  const slateGray = [100, 116, 139];
+  const charcoalText = [30, 41, 59];
+  const lightBg = [254, 252, 248];
+
+  // Primary banner color based on notice type
+  const headerBg =
+    data.noticeType === "seizure_memo"
+      ? darkCrimson
+      : data.noticeType === "compounding"
+      ? [30, 58, 138] // Deep blue
+      : [120, 53, 15]; // Deep amber / bronze
+
+  // --- Header Banner ---
+  doc.setFillColor(headerBg[0], headerBg[1], headerBg[2]);
+  doc.rect(0, 0, pageWidth, 28, "F");
+
+  doc.setFillColor(amberGold[0], amberGold[1], amberGold[2]);
+  doc.rect(0, 28, pageWidth, 2, "F");
+
+  // Government Emblem & Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text("GOVERNMENT OF INDIA • DIRECTORATE OF LEGAL METROLOGY", pageWidth / 2, 7.5, {
+    align: "center",
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(254, 243, 199);
+  doc.text(
+    "MINISTRY OF CONSUMER AFFAIRS, FOOD & PUBLIC DISTRIBUTION • ENFORCEMENT & COMPLIANCE WING",
+    pageWidth / 2,
+    12.5,
+    { align: "center" }
+  );
+
+  let titleText = "FORM VI — STATUTORY SHOW CAUSE NOTICE";
+  let subTitle = "UNDER SECTION 18 & 36, LEGAL METROLOGY ACT, 2009 R/W RULE 6 OF PCR, 2011";
+
+  if (data.noticeType === "compounding") {
+    titleText = "FORM VIII — NOTICE FOR COMPOUNDING OF OFFENCE";
+    subTitle = "UNDER SECTION 48 OF LEGAL METROLOGY ACT, 2009 (COMPOSITION PENALTY ASSESSMENT)";
+  } else if (data.noticeType === "seizure_memo") {
+    titleText = "STATUTORY SEIZURE MEMO & PANCHNAMA OF GOODS";
+    subTitle = "UNDER SECTION 15 OF LEGAL METROLOGY ACT, 2009 & RULE 29 OF PCR, 2011";
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text(titleText, pageWidth / 2, 20, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.5);
+  doc.setTextColor(253, 230, 138);
+  doc.text(subTitle, pageWidth / 2, 25, { align: "center" });
+
+  // Notice Metadata Bar
+  let y = 36;
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.roundedRect(14, y, pageWidth - 28, 22, 2, 2, "F");
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, y, pageWidth - 28, 22, 2, 2, "S");
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("NOTICE REF NO:", 18, y + 6);
+  doc.text("DATE OF ISSUE:", 18, y + 12);
+  doc.text("RESPONSE PERIOD:", 18, y + 18);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+  doc.text(data.noticeRef, 48, y + 6);
+  doc.text(data.issueDate, 48, y + 12);
+  doc.text(`${data.hearingDays} Days from receipt`, 48, y + 18);
+
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("ENFORCEMENT DIVISION:", 110, y + 6);
+  doc.text("INVESTIGATING OFFICER:", 110, y + 12);
+  doc.text("INSPECTION AUDIT ID:", 110, y + 18);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+  doc.text(data.jurisdiction, 150, y + 6);
+  doc.text(data.inspectorName, 150, y + 12);
+  doc.text(data.inspectionId, 150, y + 18);
+
+  // Respondent Address Section
+  y = 63;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text("TO (RESPONDENT / NOTICEE):", 14, y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+  doc.text(`M/s ${data.respondentName}`, 14, y + 5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text(`Premises / Jurisdiction: ${data.respondentAddress}`, 14, y + 9.5);
+  doc.text(`Establishment Class: ${data.establishmentType} under Legal Metrology Act, 2009`, 14, y + 14);
+
+  // Subject Heading
+  y = 83;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, y, pageWidth - 28, 7, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text(
+    `SUB: STATUTORY INFRACTIONS DETECTED IN COMMODITY "${data.productName.toUpperCase()}" (BATCH: ${data.batchNo})`,
+    16,
+    y + 4.5
+  );
+
+  // Pre-table Text / Allegations
+  y = 94;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+  const introPara =
+    `WHEREAS during an official inspection conducted on ${data.inspectionDate} at ${data.inspectionLocation} under Section 15 of the Legal Metrology Act, 2009, packages of the pre-packaged commodity "${data.productName}" (Net Content: ${data.netQuantityDeclared}, Declared MRP: INR ${data.mrpDeclared}) were examined and found to contravene statutory packaging provisions as specified below:`;
+  
+  const splitIntro = doc.splitTextToSize(introPara, pageWidth - 28);
+  doc.text(splitIntro, 14, y);
+  y += splitIntro.length * 4 + 2;
+
+  // Infractions Table
+  const tableRows = data.violations.map((v, i) => [
+    `${i + 1}`,
+    v.ruleCode,
+    v.ruleTitle,
+    v.description,
+    v.severity.toUpperCase(),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["S.No", "Statutory Rule", "Infraction Title", "Observation / Defect", "Severity"]],
+    body: tableRows,
+    theme: "striped",
+    headStyles: {
+      fillColor: headerBg as [number, number, number],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 7.5,
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: charcoalText as [number, number, number],
+    },
+    columnStyles: {
+      0: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: 26, fontStyle: "bold" },
+      2: { cellWidth: 42, fontStyle: "bold" },
+      3: { cellWidth: 78 },
+      4: { cellWidth: 24, halign: "center" },
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || y + 40;
+  y = finalY + 6;
+
+  // Specific Notice Directives / Legal Action Clause
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+
+  if (data.noticeType === "show_cause") {
+    doc.text("STATUTORY DIRECTIVE & CALL TO SHOW CAUSE:", 14, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.8);
+    doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+    const directiveText =
+      `NOW THEREFORE, in accordance with Section 18 & 36 of the Legal Metrology Act, 2009 read with Rule 6 of the Legal Metrology (Packaged Commodities) Rules, 2011, you are hereby directed to SHOW CAUSE in writing within ${data.hearingDays} days from receipt of this notice why prosecution should not be launched against your establishment and nominated Directors under Section 36(1) before the Competent Judicial Magistrate.\n\nFailure to reply within the stipulated time shall be deemed as admission of the offences, and ex-parte statutory prosecution shall be instituted without further notice.`;
+    const splitDirective = doc.splitTextToSize(directiveText, pageWidth - 28);
+    doc.text(splitDirective, 14, y);
+    y += splitDirective.length * 3.8 + 6;
+  } else if (data.noticeType === "compounding") {
+    doc.text("STATUTORY COMPOUNDING ASSESSMENT (SECTION 48):", 14, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.8);
+    doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+    const compoundingText =
+      `WHEREAS the offences are compoundable under Section 48 of the Act, you are hereby offered the opportunity to compound the offences by remitting a composition fee of INR ${data.compoundingFee.toLocaleString()} (Rupees ${data.compoundingFee.toLocaleString()} only) calculated under ${STATUTORY_PENALTY_RATES[data.offenceTier].section}.\n\nRemit the compounded sum to the Designated Government Treasury Account within ${data.hearingDays} days and submit proof of compliance to avoid criminal proceedings in the Court of Law.`;
+    const splitCompounding = doc.splitTextToSize(compoundingText, pageWidth - 28);
+    doc.text(splitCompounding, 14, y);
+    y += splitCompounding.length * 3.8 + 6;
+  } else if (data.noticeType === "seizure_memo") {
+    doc.text("PANCHNAMA & SEIZURE PARTICULARS (SECTION 15):", 14, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.8);
+    doc.setTextColor(charcoalText[0], charcoalText[1], charcoalText[2]);
+    const seizureText =
+      `In exercise of powers under Section 15 of Legal Metrology Act, 2009, the undersigned has SEIZED ${data.seizedUnits} packages of "${data.productName}" (Batch: ${data.batchNo}) from the premises, and drawn ${data.sampleUnitsSeized} test units under official paper seal for laboratory validation.\n\nPANCH WITNESS 1: ${data.panch1Name} (${data.panch1Address})\nPANCH WITNESS 2: ${data.panch2Name} (${data.panch2Address})\nThe seized lot is handed over for safe custody to avoid alteration or disposal.`;
+    const splitSeizure = doc.splitTextToSize(seizureText, pageWidth - 28);
+    doc.text(splitSeizure, 14, y);
+    y += splitSeizure.length * 3.8 + 6;
+  }
+
+  // Signature Block
+  const sigY = Math.min(y + 2, pageHeight - 34);
+
+  // Left Signature (Noticee / Witness)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text("ACKNOWLEDGEMENT / WITNESSES", 14, sigY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("Signature / Seal of Noticee or Representative", 14, sigY + 5);
+  doc.text(`Dated: ${data.issueDate}`, 14, sigY + 9);
+
+  // Right Signature (Legal Metrology Officer)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text("LEGAL METROLOGY ENFORCEMENT OFFICER", pageWidth - 80, sigY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text(data.inspectorName, pageWidth - 80, sigY + 5);
+  doc.text(data.jurisdiction, pageWidth - 80, sigY + 9);
+  doc.text("Office Seal & Digital Signature Hash", pageWidth - 80, sigY + 13);
+
+  // Bottom Security Line
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+
+  doc.setFontSize(6.5);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text(
+    `Official statutory instrument generated under the Legal Metrology Act, 2009. Ref: ${data.noticeRef} • Issued on ${data.issueDate}`,
+    pageWidth / 2,
+    pageHeight - 8,
+    { align: "center" }
+  );
+
+  const filename = `${data.noticeType.toUpperCase()}-${data.noticeRef.replace(/[\/\\]/g, "-")}.pdf`;
+  doc.save(filename);
+}
+

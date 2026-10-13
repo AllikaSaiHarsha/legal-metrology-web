@@ -18,6 +18,7 @@ import {
   Sparkles,
   CameraOff,
   ScanSearch,
+  Scale,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -25,6 +26,7 @@ import { AccordionCard } from "@/components/AccordionCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
+import StatutoryNoticeModal from "@/components/StatutoryNoticeModal";
 import {
   Inspection,
   Product,
@@ -55,6 +57,7 @@ export default function InspectionAuditView({
     normalizeImageUrl(inspection.imageUrl || "")
   );
   const [imgLoadFailed, setImgLoadFailed] = useState<boolean>(false);
+  const [showNoticeModal, setShowNoticeModal] = useState<boolean>(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -559,22 +562,44 @@ export default function InspectionAuditView({
                   </div>
                 </div>
 
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() =>
-                    generateInspectionPDF({ inspection, product, violations })
-                  }
-                  className="shadow-blue-600/30 text-xs gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF Certificate</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  {violations.length > 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setShowNoticeModal(true)}
+                      className="bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 text-xs gap-1.5"
+                    >
+                      <Scale className="w-3.5 h-3.5" />
+                      <span>Issue Statutory Notice</span>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      generateInspectionPDF({ inspection, product, violations })
+                    }
+                    className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-100 text-xs gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF Certificate</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      <StatutoryNoticeModal
+        isOpen={showNoticeModal}
+        onClose={() => setShowNoticeModal(false)}
+        inspection={inspection}
+        product={product}
+        violations={violations}
+      />
     </div>
   );
 }
