@@ -176,7 +176,6 @@ export default function Dashboard() {
               trendLabel="vs last month"
               icon={<ClipboardCheck className="w-5 h-5" />}
               accentColor="cobalt"
-              progressPercent={82}
               delay={0.05}
             />
             <KPICard
@@ -188,7 +187,6 @@ export default function Dashboard() {
               trendLabel="vs target (85%)"
               icon={<ShieldCheck className="w-5 h-5" />}
               accentColor="emerald"
-              progressPercent={kpiStats.complianceRate}
               delay={0.1}
             />
             <KPICard
@@ -198,7 +196,6 @@ export default function Dashboard() {
               trendLabel="unresolved flags"
               icon={<AlertTriangle className="w-5 h-5" />}
               accentColor="rose"
-              progressPercent={Math.min(100, kpiStats.activeViolations * 12)}
               delay={0.15}
             />
             <KPICard
@@ -208,7 +205,6 @@ export default function Dashboard() {
               trendLabel="in inspector queue"
               icon={<Clock className="w-5 h-5" />}
               accentColor="amber"
-              progressPercent={Math.min(100, kpiStats.pendingAudits * 18)}
               delay={0.2}
             />
           </div>

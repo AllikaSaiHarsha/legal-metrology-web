@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { animate } from "animejs";
 import { BentoCard } from "./BentoCard";
 import { AnimatedCounter } from "./AnimatedCounter";
 
@@ -17,7 +16,6 @@ export interface KPICardProps {
   icon: React.ReactNode;
   accentColor: "cobalt" | "indigo" | "emerald" | "rose" | "amber" | "violet";
   delay?: number;
-  progressPercent?: number; // Optional gauge percent (0-100)
 }
 
 const accentStyles = {
@@ -76,35 +74,12 @@ export function KPICard({
   icon,
   accentColor = "cobalt",
   delay = 0,
-  progressPercent,
 }: KPICardProps) {
   const isPositive = trend >= 0;
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
   const trendColorClass = isPositive ? "text-emerald-400" : "text-rose-400";
   const trendBgClass = isPositive ? "bg-emerald-500/15 border-emerald-500/30" : "bg-red-500/15 border-red-500/30";
   const accent = accentStyles[accentColor] || accentStyles.cobalt;
-
-  const circleRef = useRef<SVGCircleElement>(null);
-  const percent = progressPercent ?? Math.min(100, Math.max(10, (value % 100) || 75));
-  const radius = 22;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffsetTarget = circumference - (percent / 100) * circumference;
-
-  useEffect(() => {
-    if (!circleRef.current) return;
-    try {
-      animate(circleRef.current, {
-        strokeDashoffset: [circumference, strokeDashoffsetTarget],
-        duration: 1400,
-        delay: delay * 1000 + 200,
-        ease: "outQuad",
-      });
-    } catch {
-      if (circleRef.current) {
-        circleRef.current.style.strokeDashoffset = `${strokeDashoffsetTarget}`;
-      }
-    }
-  }, [circumference, strokeDashoffsetTarget, delay]);
 
   return (
     <BentoCard delay={delay} glowColor={accent.glow}>
@@ -116,46 +91,14 @@ export function KPICard({
             {icon}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Precision Micro Radial Gauge (Anime.js animated) */}
-            <div className="relative w-10 h-10 flex items-center justify-center">
-              <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 54 54">
-                <circle
-                  cx="27"
-                  cy="27"
-                  r={radius}
-                  className="stroke-slate-800/80 fill-none"
-                  strokeWidth="4"
-                />
-                <circle
-                  ref={circleRef}
-                  cx="27"
-                  cy="27"
-                  r={radius}
-                  stroke={accent.stroke}
-                  className="fill-none"
-                  strokeWidth="4"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={circumference}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-mono font-medium text-slate-300">
-                  {Math.round(percent)}%
-                </span>
-              </div>
-            </div>
-
-            <div
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${trendBgClass} ${trendColorClass}`}
-            >
-              <TrendIcon className="w-3.5 h-3.5" />
-              <span>
-                {isPositive ? "+" : ""}
-                {trend}%
-              </span>
-            </div>
+          <div
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${trendBgClass} ${trendColorClass}`}
+          >
+            <TrendIcon className="w-3.5 h-3.5" />
+            <span>
+              {isPositive ? "+" : ""}
+              {trend}%
+            </span>
           </div>
         </div>
 
