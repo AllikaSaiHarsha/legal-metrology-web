@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Layers,
   ShieldAlert,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -40,6 +41,8 @@ import { saveImageToIDB } from "@/lib/idb";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
 import BackendBoundingBoxViewer from "./BackendBoundingBoxViewer";
 import { AccordionCard } from "./AccordionCard";
+import BarcodeVerificationCard, { MasterProductRecord } from "./BarcodeVerificationCard";
+import StatutoryNoticeModal from "./StatutoryNoticeModal";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +92,47 @@ export default function LiveInspectionScanner() {
   } | null>(null);
 
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [showNoticeModal, setShowNoticeModal] = useState<boolean>(false);
+
+  // Extract OCR MRP if detected in findings
+  const mrpDetection = results?.detections?.find(
+    (d) =>
+      (d.category || "").toLowerCase().includes("mrp") ||
+      (d.label || "").toLowerCase().includes("mrp")
+  );
+  let parsedOcrMrp: number | undefined;
+  if (mrpDetection) {
+    const match = mrpDetection.label.match(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (match) parsedOcrMrp = parseFloat(match[1]);
+  }
+
+  const handleAddCustomViolation = (violation: {
+    ruleCode: string;
+    ruleTitle: string;
+    description: string;
+    severity: "critical" | "major";
+  }) => {
+    if (!savedData) return;
+    const newViol: Violation = {
+      id: `VIOL-${Date.now().toString().slice(-4)}`,
+      inspectionId: savedData.inspection.id,
+      ruleCode: violation.ruleCode,
+      ruleTitle: violation.ruleTitle,
+      description: violation.description,
+      severity: violation.severity,
+      remediation: "Cease sale of altered packages; re-declare authorized manufacturer price under PCR Rule 18.",
+      status: "open",
+    };
+    setSavedData({
+      ...savedData,
+      violations: [newViol, ...savedData.violations],
+      inspection: {
+        ...savedData.inspection,
+        complianceScore: Math.max(0, savedData.inspection.complianceScore - 25),
+        status: "in-progress",
+      },
+    });
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -569,6 +613,16 @@ export default function LiveInspectionScanner() {
                 </div>
               )}
 
+              {/* Barcode Verification & Anti-Tamper Card */}
+              <BarcodeVerificationCard
+                currentOcrMrp={parsedOcrMrp}
+                onApplyProductInfo={(product) => {
+                  if (product.name) setProductNameInput(product.name);
+                  if (product.manufacturer) setManufacturerInput(product.manufacturer);
+                }}
+                onAddViolation={handleAddCustomViolation}
+              />
+
               {/* Inspection Summary Card */}
               <div className="p-5 rounded-2xl liquid-glass-card shadow-xl">
                 <div className="flex items-start justify-between mb-4">
@@ -709,7 +763,7 @@ export default function LiveInspectionScanner() {
                       </div>
 
                       {/* Action Links */}
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
                         <Button
                           variant="default"
                           size="sm"
@@ -717,8 +771,20 @@ export default function LiveInspectionScanner() {
                           className="flex-1 shadow-blue-600/30 text-xs"
                         >
                           <Download className="w-3.5 h-3.5 mr-1" />
-                          <span>Generate PDF Certificate</span>
+                          <span>Generate PDF</span>
                         </Button>
+
+                        {savedData.violations.length > 0 && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setShowNoticeModal(true)}
+                            className="bg-amber-600 hover:bg-amber-500 text-white text-xs gap-1 shadow-md shadow-amber-950/40"
+                          >
+                            <Scale className="w-3.5 h-3.5" />
+                            <span>Issue Notice</span>
+                          </Button>
+                        )}
 
                         <Link href="/inspections">
                           <Button variant="outline" size="sm" className="text-xs gap-1">
@@ -854,6 +920,16 @@ export default function LiveInspectionScanner() {
           </div>
         )}
       </div>
+
+      {savedData && (
+        <StatutoryNoticeModal
+          isOpen={showNoticeModal}
+          onClose={() => setShowNoticeModal(false)}
+          inspection={savedData.inspection}
+          product={savedData.product}
+          violations={savedData.violations}
+        />
+      )}
     </div>
   );
 }
