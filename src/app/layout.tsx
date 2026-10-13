@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   title: "LegalMetrics — Compliance Platform",
   description:
     "Modern enforcement dashboard for Legal Metrology compliance monitoring, inspection audits, and violation tracking across India.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "LegalMetrics",
+  },
   keywords: [
     "legal metrology",
     "compliance",
