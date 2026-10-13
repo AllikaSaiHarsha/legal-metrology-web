@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 import {
   FileCheck,
   Eye,
@@ -15,6 +16,8 @@ import {
   PackageCheck,
   Layers,
   Sparkles,
+  CameraOff,
+  ScanSearch,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -22,7 +25,6 @@ import { AccordionCard } from "@/components/AccordionCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
-import PackageLabelMockup from "./PackageLabelMockup";
 import {
   Inspection,
   Product,
@@ -117,88 +119,6 @@ export default function InspectionAuditView({
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.25, 2.5));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.25, 0.75));
   const handleResetZoom = () => setZoomLevel(1);
-
-  // Synthetic fallback boxes aligned with PackageLabelMockup
-  const syntheticBoxes = [
-    {
-      id: "box-net-qty",
-      category: "Net Weight",
-      ruleCode: "LM-R6(1)(b)",
-      status: violations.some(
-        (v) => v.ruleCode.includes("6(1)(b)") || v.ruleTitle.includes("Net")
-      )
-        ? "Failed"
-        : "Passed",
-      label: `Net Quantity: ${product.netQuantity}`,
-      left: 6,
-      top: 31,
-      width: 88,
-      height: 9,
-    },
-    {
-      id: "box-mrp",
-      category: "MRP",
-      ruleCode: "LM-R6(1)(a)",
-      status: violations.some(
-        (v) => v.ruleCode.includes("6(1)(a)") || v.ruleTitle.includes("MRP")
-      )
-        ? "Failed"
-        : "Passed",
-      label: `MRP: Rs. ${product.mrp.toFixed(2)} (Incl. of all taxes)`,
-      left: 6,
-      top: 41.5,
-      width: 88,
-      height: 10,
-    },
-    {
-      id: "box-mfg-date",
-      category: "Manufacture Date",
-      ruleCode: "LM-R6(1)(d)",
-      status: violations.some(
-        (v) =>
-          v.ruleCode.includes("6(1)(d)") ||
-          v.ruleTitle.includes("Manufacture")
-      )
-        ? "Failed"
-        : "Passed",
-      label: `Mfg Date: ${product.mfgDate}`,
-      left: 6,
-      top: 53,
-      width: 42,
-      height: 9,
-    },
-    {
-      id: "box-exp-date",
-      category: "Expire Date",
-      ruleCode: "LM-R6(1)(e)",
-      status: violations.some(
-        (v) => v.ruleCode.includes("6(1)(e)") || v.ruleTitle.includes("Expire")
-      )
-        ? "Failed"
-        : "Passed",
-      label: `Best Before: ${product.expiryDate || "12 Months"}`,
-      left: 6,
-      top: 63.5,
-      width: 88,
-      height: 8.5,
-    },
-    {
-      id: "box-consumer-care",
-      category: "Consumer Info",
-      ruleCode: "LM-R6(1)(g)",
-      status: violations.some(
-        (v) =>
-          v.ruleCode.includes("6(1)(g)") || v.ruleTitle.includes("Consumer")
-      )
-        ? "Failed"
-        : "Passed",
-      label: `Consumer Helpline: 1800-22-1111`,
-      left: 6,
-      top: 73.5,
-      width: 88,
-      height: 8.5,
-    },
-  ];
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 select-none">
@@ -374,47 +294,22 @@ export default function InspectionAuditView({
                       })}
                   </div>
                 ) : (
-                  /* Fallback Mockup Label */
-                  <div className="relative inline-block rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
-                    <PackageLabelMockup
-                      product={product}
-                      inspection={inspection}
-                    />
-                    {showBoxes &&
-                      syntheticBoxes.map((box) => {
-                        const isPassed = box.status === "Passed";
-                        const isHovered =
-                          hoveredBox === box || hoveredBox?.category === box.category;
-
-                        return (
-                          <div
-                            key={box.id}
-                            onMouseEnter={() => setHoveredBox(box)}
-                            onMouseLeave={() => setHoveredBox(null)}
-                            className={`absolute border-2 border-dashed rounded-md cursor-pointer transition-all ${
-                              isHovered ? "z-30 ring-2 ring-blue-400/80 shadow-lg" : "z-20"
-                            } ${
-                              isPassed
-                                ? "border-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
-                              : "border-red-500 bg-red-500/15 hover:bg-red-500/25"
-                            }`}
-                            style={{
-                              left: `${box.left}%`,
-                              top: `${box.top}%`,
-                              width: `${box.width}%`,
-                              height: `${box.height}%`,
-                            }}
-                          >
-                            <span
-                              className={`absolute -top-5 left-0 text-[9px] font-mono font-semibold px-1 py-0.5 rounded shadow whitespace-nowrap z-30 ${
-                                isPassed ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-                              }`}
-                            >
-                              {box.category}
-                            </span>
-                          </div>
-                        );
-                      })}
+                  <div className="flex flex-col items-center justify-center p-12 text-center max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md shadow-2xl">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4 shadow-lg shadow-blue-500/10">
+                      <CameraOff className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-100 mb-1">
+                      No Packaging Photo Attached
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-6">
+                      This statutory record was registered without a high-resolution packaging photo. Upload a product label scan to enable optical declaration bounding box verification.
+                    </p>
+                    <Link href="/scan">
+                      <Button size="sm" variant="default" className="gap-2 shadow-blue-600/30">
+                        <ScanSearch className="w-4 h-4" />
+                        <span>Run Live Label Scan</span>
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </div>

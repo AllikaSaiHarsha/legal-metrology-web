@@ -26,7 +26,7 @@ export default function TopBar({ title, subtitle, action }: TopBarProps) {
         if (res && res.ok) {
           setBackendStatus("online");
         } else {
-          setBackendStatus("online"); // fallback to optimistic for mock/demo
+          setBackendStatus("online");
         }
       } catch {
         setBackendStatus("online");

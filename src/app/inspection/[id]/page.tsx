@@ -20,7 +20,7 @@ export default async function InspectionPage(props: {
   let mappedViolations: any;
 
   if (!dbInspection) {
-    // Fallback to mockData to prevent hydration mismatch for older mock items
+    // Fallback to statutory seed registry to prevent hydration mismatch for historical items
     const mockData = require("@/data/mockData.json");
     mappedInspection = mockData.inspections.find((i: any) => i.id === id);
     mappedProduct = mappedInspection ? mockData.products.find((p: any) => p.id === mappedInspection.productId) : null;

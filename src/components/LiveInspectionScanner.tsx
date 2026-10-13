@@ -185,7 +185,7 @@ export default function LiveInspectionScanner() {
 
     const inspectionRecord: Inspection = createFallbackInspection(
       savedData?.inspection,
-      savedData?.product?.id || "PROD-GEN",
+      savedData?.product?.id || "PRD-COMMODITY",
       session?.user?.name,
       failedCount,
       complianceScore,
@@ -200,7 +200,7 @@ export default function LiveInspectionScanner() {
       manufacturer: manufacturerInput || results?.manufacturer || "Per Label Declaration",
       mfgDate: "Per Label",
       expiryDate: "Per Label",
-      batchNo: "BATCH-AI-INSPECT",
+      batchNo: "Per Label Declaration",
       netQuantity: "Declared on Pack",
       mrp: 0,
       complianceStatus: failedCount > 0 ? "non-compliant" : "compliant",
