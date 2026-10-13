@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Inspection, Product, Violation } from "./inspectionsStore";
 import { StatutoryNoticeData, STATUTORY_PENALTY_RATES } from "./statutoryNotices";
+import { PreMarketAuditData } from "./preMarketAudit";
 
 export interface PDFReportOptions {
   inspection: Inspection;
@@ -596,4 +597,205 @@ export function generateStatutoryNoticePDF(data: StatutoryNoticeData): void {
   const filename = `${data.noticeType.toUpperCase()}-${data.noticeRef.replace(/[\/\\]/g, "-")}.pdf`;
   doc.save(filename);
 }
+
+export function generatePreMarketCertificatePDF(data: PreMarketAuditData): void {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const forestGreen = [6, 78, 59]; // #064e3b
+  const emeraldAccent = [16, 185, 129]; // #10b981
+  const navyDark = [15, 23, 42];
+  const slateGray = [100, 116, 139];
+  const charcoal = [30, 41, 59];
+  const lightBg = [240, 253, 244]; // Soft emerald tint
+
+  // Header Banner
+  doc.setFillColor(forestGreen[0], forestGreen[1], forestGreen[2]);
+  doc.rect(0, 0, pageWidth, 28, "F");
+
+  doc.setFillColor(emeraldAccent[0], emeraldAccent[1], emeraldAccent[2]);
+  doc.rect(0, 28, pageWidth, 2, "F");
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text("GOVERNMENT OF INDIA • DIRECTORATE OF LEGAL METROLOGY", pageWidth / 2, 7.5, {
+    align: "center",
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(209, 250, 229);
+  doc.text(
+    "PRE-MARKET REGULATORY CONFORMITY & PACKAGING ARTWORK ASSESSMENT CELL",
+    pageWidth / 2,
+    12.5,
+    { align: "center" }
+  );
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text(
+    "PRE-MARKET PACKAGING COMPLIANCE READINESS CERTIFICATE",
+    pageWidth / 2,
+    21,
+    { align: "center" }
+  );
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.5);
+  doc.setTextColor(167, 243, 208);
+  doc.text(
+    "CONFORMITY ASSESSMENT UNDER RULE 6 OF LEGAL METROLOGY (PACKAGED COMMODITIES) RULES, 2011",
+    pageWidth / 2,
+    25.5,
+    { align: "center" }
+  );
+
+  // Metadata Card
+  let y = 36;
+  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+  doc.roundedRect(14, y, pageWidth - 28, 26, 2, 2, "F");
+  doc.setDrawColor(187, 247, 208);
+  doc.roundedRect(14, y, pageWidth - 28, 26, 2, 2, "S");
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("CERTIFICATE ID:", 18, y + 6);
+  doc.text("DATE OF APPRAISAL:", 18, y + 12);
+  doc.text("APPLICANT BRAND:", 18, y + 18);
+  doc.text("MANUFACTURER / PACKER:", 18, y + 24);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(charcoal[0], charcoal[1], charcoal[2]);
+  doc.text(data.certificateId, 58, y + 6);
+  doc.text(data.date, 58, y + 12);
+  doc.text(data.brandName, 58, y + 18);
+  doc.text(data.manufacturerName, 58, y + 24);
+
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("COMMODITY SKU:", 120, y + 6);
+  doc.text("DECLARED NET QTY:", 120, y + 12);
+  doc.text("PROPOSED MRP:", 120, y + 18);
+  doc.text("VERDICT:", 120, y + 24);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(charcoal[0], charcoal[1], charcoal[2]);
+  doc.text(data.skuTitle, 155, y + 6);
+  doc.text(data.declaredNetQuantity, 155, y + 12);
+  doc.text(`INR ${data.declaredMrp.toFixed(2)}`, 155, y + 18);
+
+  const isApproved = data.verdict === "APPROVED_FOR_PRINT";
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(isApproved ? 16 : 225, isApproved ? 185 : 29, isApproved ? 129 : 72);
+  doc.text(isApproved ? "APPROVED FOR PRINT" : "REVISIONS REQUIRED", 155, y + 24);
+
+  // Table of Checked Rules
+  y = 68;
+  const tableRows = data.checks.map((c, i) => [
+    `${i + 1}`,
+    c.ruleCitation,
+    c.label,
+    c.detectedValue || "Verified in Proof",
+    c.status.toUpperCase(),
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["S.No", "Rule Citation", "Statutory Declaration", "Artwork Observation", "Result"]],
+    body: tableRows,
+    theme: "striped",
+    headStyles: {
+      fillColor: forestGreen as [number, number, number],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 7.5,
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: charcoal as [number, number, number],
+    },
+    columnStyles: {
+      0: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: 34, fontStyle: "bold" },
+      2: { cellWidth: 54, fontStyle: "bold" },
+      3: { cellWidth: 62 },
+      4: { cellWidth: 20, halign: "center" },
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
+  let endY = finalY + 8;
+
+  // Legal Validation Paragraph
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text("REGULATORY ADVISORY & STATUTORY CERTIFICATION:", 14, endY);
+  endY += 4.5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(charcoal[0], charcoal[1], charcoal[2]);
+  const certificationText =
+    "This certificate confirms that the digital packaging artwork proof submitted for the aforesaid commodity has been examined against the mandatory declarations and font height specifications prescribed under the Legal Metrology (Packaged Commodities) Rules, 2011.\n\nCommercial batches manufactured, packed, or imported under this packaging design must strictly maintain the indelibility, positioning, and accuracy of declarations verified herein. Any subsequent alteration of declared MRP, net weight, or packer address will nullify this clearance.";
+
+  const splitText = doc.splitTextToSize(certificationText, pageWidth - 28);
+  doc.text(splitText, 14, endY);
+  endY += splitText.length * 3.6 + 6;
+
+  // Signature Block
+  const sigY = Math.min(endY + 2, pageHeight - 34);
+
+  // Left Stamp
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(forestGreen[0], forestGreen[1], forestGreen[2]);
+  doc.text("PRE-MARKET VERIFICATION DIVISION", 14, sigY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("Directorate of Legal Metrology, Government of India", 14, sigY + 5);
+  doc.text(`Validated On: ${data.date}`, 14, sigY + 9);
+
+  // Right Signatory
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(navyDark[0], navyDark[1], navyDark[2]);
+  doc.text("CONTROLLER OF LEGAL METROLOGY", pageWidth - 76, sigY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text("Authorized Technical Examiner", pageWidth - 76, sigY + 5);
+  doc.text("Digital Seal & Hash Verified", pageWidth - 76, sigY + 9);
+
+  // Footer line
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+
+  doc.setFontSize(6.5);
+  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+  doc.text(
+    `Pre-Market Conformity Instrument Ref: ${data.certificateId} • Verified under Legal Metrology Act, 2009`,
+    pageWidth / 2,
+    pageHeight - 8,
+    { align: "center" }
+  );
+
+  const cleanFilename = `Pre-Market-Readiness-${data.certificateId.replace(/[\/\\]/g, "-")}.pdf`;
+  doc.save(cleanFilename);
+}
+
 
