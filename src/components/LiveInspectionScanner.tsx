@@ -359,9 +359,7 @@ export default function LiveInspectionScanner() {
         return !(isCoO && isErr);
       });
 
-      setResults(data);
-
-      // Auto-detect barcode from package image or OCR findings during audit scan
+      // Auto-detect barcode from package image or Gemini OCR findings during audit scan
       let currentBarcodeObj = autoDetectedBarcode;
       if (!currentBarcodeObj && selectedFile) {
         try {
@@ -386,13 +384,70 @@ export default function LiveInspectionScanner() {
         if (ocrBarcode) {
           currentBarcodeObj = {
             code: ocrBarcode.code,
-            source: `Package OCR Match (${ocrBarcode.format})`,
+            source: `Gemini Multimodal Vision (${ocrBarcode.format})`,
           };
           setAutoDetectedBarcode(currentBarcodeObj);
         }
       }
 
+      // Automated Database Cross-Verification & Rule 18(2) Compliance Check
+      let dbProduct: any = null;
+      if (currentBarcodeObj?.code) {
+        try {
+          const barcodeRes = await fetch(`/api/barcode/${encodeURIComponent(currentBarcodeObj.code)}`);
+          if (barcodeRes.ok) {
+            const barcodeData = await barcodeRes.json();
+            if (barcodeData.found && barcodeData.product) {
+              dbProduct = barcodeData.product;
+              if (dbProduct.name) {
+                data.product_name = dbProduct.name;
+                setProductNameInput(dbProduct.name);
+              }
+              if (dbProduct.manufacturer) {
+                data.manufacturer = dbProduct.manufacturer;
+                setManufacturerInput(dbProduct.manufacturer);
+              }
+
+              // Extract OCR price from Gemini detections
+              const mrpDet = data.detections.find(
+                (d) =>
+                  (d.category || "").toLowerCase().includes("mrp") ||
+                  (d.label || "").toLowerCase().includes("mrp")
+              );
+              let detectedMrp: number | undefined;
+              if (mrpDet) {
+                const match = mrpDet.label.match(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+                if (match) detectedMrp = parseFloat(match[1]);
+              }
+
+              // Cross-verify: If physical label price exceeds central registered MRP
+              if (detectedMrp && dbProduct.mrp && dbProduct.mrp > 0 && detectedMrp > dbProduct.mrp) {
+                const overcharge = (detectedMrp - dbProduct.mrp).toFixed(2);
+                data.detections.unshift({
+                  category: "Rule 18(2) Anti-Tamper & Dual MRP",
+                  label: `DUAL MRP VIOLATION: Packaged price (₹${detectedMrp.toFixed(2)}) exceeds registered database MRP (₹${dbProduct.mrp.toFixed(2)}) by ₹${overcharge}`,
+                  status: "Failed",
+                  box: { x: 0.05, y: 0.05, width: 0.9, height: 0.08 },
+                });
+              } else if (dbProduct.mrp > 0) {
+                data.detections.push({
+                  category: "Rule 18 Price Integrity",
+                  label: `Database Verified: Official Authorized MRP ₹${dbProduct.mrp.toFixed(2)} (GTIN: ${currentBarcodeObj.code})`,
+                  status: "Passed",
+                  box: { x: 0.05, y: 0.05, width: 0.9, height: 0.08 },
+                });
+              }
+            }
+          }
+        } catch (dbErr) {
+          console.debug("Automated DB verification notice:", dbErr);
+        }
+      }
+
+      setResults(data);
+
       const inferredProductName =
+        dbProduct?.name ||
         data.product_name ||
         productNameInput ||
         selectedFile.name
@@ -400,8 +455,12 @@ export default function LiveInspectionScanner() {
           .replace(/[-_]/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
 
-      if (data.product_name) setProductNameInput(data.product_name);
-      if (data.manufacturer) setManufacturerInput(data.manufacturer);
+      if (dbProduct?.name || data.product_name) {
+        setProductNameInput(dbProduct?.name || data.product_name);
+      }
+      if (dbProduct?.manufacturer || data.manufacturer) {
+        setManufacturerInput(dbProduct?.manufacturer || data.manufacturer);
+      }
 
       let finalImg = dataUrl;
       if (!finalImg && selectedFile) {
