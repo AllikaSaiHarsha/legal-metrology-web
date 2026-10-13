@@ -202,32 +202,6 @@ export default function BarcodeVerificationCard({
         </Button>
       </div>
 
-      {/* Quick Test Barcodes */}
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 flex-wrap">
-        <span className="text-slate-500 text-[10px] uppercase font-semibold">Quick Test:</span>
-        <button
-          type="button"
-          onClick={() => handleQuickSelect("8901030018507")}
-          className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[10px] border border-slate-700/60 transition"
-        >
-          Tata Salt (8901030018507)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleQuickSelect("8901262010041")}
-          className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[10px] border border-slate-700/60 transition"
-        >
-          Amul Butter (8901262010041)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleQuickSelect("8901063012213")}
-          className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[10px] border border-slate-700/60 transition"
-        >
-          Britannia (8901063012213)
-        </button>
-      </div>
-
       {/* Lookup Result Box */}
       {lookupResult && (
         <div className="space-y-3 pt-1">
@@ -261,7 +235,7 @@ export default function BarcodeVerificationCard({
                       ? `₹${lookupResult.product.mrp.toFixed(2)}`
                       : currentOcrMrp && currentOcrMrp > 0
                       ? `₹${currentOcrMrp.toFixed(2)} (Label OCR)`
-                      : "Official Tariff"}
+                      : "Not Declared in Registry"}
                   </span>
                 </div>
                 <div>
@@ -273,7 +247,7 @@ export default function BarcodeVerificationCard({
                     !lookupResult.product.netQuantity.includes("undefined") &&
                     lookupResult.product.netQuantity !== "Standard Net Content"
                       ? lookupResult.product.netQuantity
-                      : currentOcrQuantity || lookupResult.product.netQuantity || "1 Standard Pack"}
+                      : currentOcrQuantity || "Declared on Pack"}
                   </span>
                 </div>
                 <div>
@@ -281,7 +255,7 @@ export default function BarcodeVerificationCard({
                     Classification
                   </span>
                   <span className="text-slate-300 truncate block">
-                    {lookupResult.product.category || "FMCG"}
+                    {lookupResult.product.category || "Packaged Goods"}
                   </span>
                 </div>
               </div>

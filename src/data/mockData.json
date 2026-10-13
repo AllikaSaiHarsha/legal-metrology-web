@@ -143,30 +143,6 @@
       "netQuantity": "50 g",
       "mrp": 125.00,
       "complianceStatus": "compliant"
-    },
-    {
-      "id": "8902080105045",
-      "name": "Pepsi Can",
-      "category": "Carbonated Waters",
-      "manufacturer": "PepsiCo India Holdings Pvt. Ltd.",
-      "mfgDate": "2024-05-01",
-      "expiryDate": "2024-11-01",
-      "batchNo": "PEP-24-045",
-      "netQuantity": "300 ml",
-      "mrp": 40.00,
-      "complianceStatus": "compliant"
-    },
-    {
-      "id": "5449000000996",
-      "name": "Coca-Cola Original Taste",
-      "category": "Carbonated Waters",
-      "manufacturer": "Coca-Cola India Pvt. Ltd.",
-      "mfgDate": "2024-05-01",
-      "expiryDate": "2024-11-01",
-      "batchNo": "CC-24-996",
-      "netQuantity": "300 ml",
-      "mrp": 40.00,
-      "complianceStatus": "compliant"
     }
   ],
   "inspections": [

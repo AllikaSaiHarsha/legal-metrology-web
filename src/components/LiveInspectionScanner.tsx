@@ -256,6 +256,17 @@ export default function LiveInspectionScanner() {
       saveImageToIDB(saved.inspection.id, finalImg);
     }
 
+    // Persist to central database
+    fetch("/api/db/inspections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        inspection: saved.inspection,
+        product: saved.product,
+        violations: saved.violations,
+      }),
+    }).catch((dbErr) => console.debug("Database sync notice:", dbErr));
+
     setSavedData(saved);
   };
 
@@ -486,6 +497,17 @@ export default function LiveInspectionScanner() {
         setCachedImage(saved.inspection.id, finalImg);
         saveImageToIDB(saved.inspection.id, finalImg);
       }
+
+      // Persist to central database
+      fetch("/api/db/inspections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inspection: saved.inspection,
+          product: saved.product,
+          violations: saved.violations,
+        }),
+      }).catch((dbErr) => console.debug("Database sync notice:", dbErr));
 
       setSavedData(saved);
     } catch (err: any) {
