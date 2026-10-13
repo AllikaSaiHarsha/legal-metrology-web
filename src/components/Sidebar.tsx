@@ -15,14 +15,12 @@ import {
   Users,
   LogOut,
   ShieldCheck,
-  MapPin,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Live Scanner", href: "/scan", icon: ScanSearch, badge: "FASTAPI" },
-  { name: "Territorial GIS", href: "/map", icon: MapPin, badge: "GIS" },
   { name: "Pre-Market Audit", href: "/pre-market", icon: ShieldCheck, badge: "B2B" },
   { name: "Inspections", href: "/inspections", icon: ClipboardCheck },
   { name: "Products", href: "/products", icon: Package },
