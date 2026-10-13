@@ -24,6 +24,8 @@
     "@radix-ui/react-tabs": "^1.2.0",
     "@radix-ui/react-tooltip": "^1.4.0",
     "@types/animejs": "^3.1.13",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "animejs": "^4.5.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",

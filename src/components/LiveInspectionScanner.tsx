@@ -39,6 +39,7 @@ import {
 } from "@/lib/inspectionsStore";
 import { saveImageToIDB } from "@/lib/idb";
 import { generateInspectionPDF } from "@/lib/pdfGenerator";
+import { scanBarcodeFromImage, extractBarcodeFromOcrDetections } from "@/lib/barcodeScanner";
 import BackendBoundingBoxViewer from "./BackendBoundingBoxViewer";
 import { AccordionCard } from "./AccordionCard";
 import BarcodeVerificationCard, { MasterProductRecord } from "./BarcodeVerificationCard";
@@ -93,6 +94,10 @@ export default function LiveInspectionScanner() {
 
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [showNoticeModal, setShowNoticeModal] = useState<boolean>(false);
+  const [autoDetectedBarcode, setAutoDetectedBarcode] = useState<{
+    code: string;
+    source: string;
+  } | null>(null);
 
   // Extract OCR MRP if detected in findings
   const mrpDetection = results?.detections?.find(
@@ -104,6 +109,29 @@ export default function LiveInspectionScanner() {
   if (mrpDetection) {
     const match = mrpDetection.label.match(/(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]+)?)/i);
     if (match) parsedOcrMrp = parseFloat(match[1]);
+  }
+
+  // Extract OCR Net Quantity if detected in findings
+  const qtyDetection = results?.detections?.find(
+    (d) =>
+      (d.category || "").toLowerCase().includes("quantity") ||
+      (d.category || "").toLowerCase().includes("net") ||
+      (d.category || "").toLowerCase().includes("weight") ||
+      (d.label || "").toLowerCase().includes("net qty") ||
+      (d.label || "").toLowerCase().includes("net quantity") ||
+      (d.label || "").toLowerCase().includes("net weight") ||
+      (d.label || "").toLowerCase().includes("net content")
+  );
+  let parsedOcrQuantity: string | undefined;
+  if (qtyDetection) {
+    const match = qtyDetection.label.match(
+      /\b(\d+(?:\.\d+)?\s*(?:ml|l|g|kg|gm|gms|ltr|litre|cl|oz|pack|pcs|units?|n))\b/i
+    );
+    if (match) {
+      parsedOcrQuantity = match[1];
+    } else {
+      parsedOcrQuantity = qtyDetection.label;
+    }
   }
 
   const handleAddCustomViolation = (violation: {
@@ -159,6 +187,22 @@ export default function LiveInspectionScanner() {
     setPreviewUrl(URL.createObjectURL(file));
     setResults(null);
     setSavedData(null);
+    setAutoDetectedBarcode(null);
+
+    // Asynchronously scan for barcode right upon file selection
+    scanBarcodeFromImage(file)
+      .then((barcodeRes) => {
+        if (barcodeRes) {
+          setAutoDetectedBarcode({
+            code: barcodeRes.code,
+            source:
+              barcodeRes.source === "native_detector"
+                ? "Native Hardware Scanner"
+                : "ZXing Optical Vision",
+          });
+        }
+      })
+      .catch((e) => console.debug("Auto optical barcode detection notice:", e));
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -317,6 +361,37 @@ export default function LiveInspectionScanner() {
 
       setResults(data);
 
+      // Auto-detect barcode from package image or OCR findings during audit scan
+      let currentBarcodeObj = autoDetectedBarcode;
+      if (!currentBarcodeObj && selectedFile) {
+        try {
+          const opticalRes = await scanBarcodeFromImage(selectedFile);
+          if (opticalRes) {
+            currentBarcodeObj = {
+              code: opticalRes.code,
+              source:
+                opticalRes.source === "native_detector"
+                  ? "Native Hardware Scanner"
+                  : "ZXing Optical Vision",
+            };
+            setAutoDetectedBarcode(currentBarcodeObj);
+          }
+        } catch (e) {
+          console.debug("Optical scan during runScan error:", e);
+        }
+      }
+
+      if (!currentBarcodeObj && data.detections && data.detections.length > 0) {
+        const ocrBarcode = extractBarcodeFromOcrDetections(data.detections);
+        if (ocrBarcode) {
+          currentBarcodeObj = {
+            code: ocrBarcode.code,
+            source: `Package OCR Match (${ocrBarcode.format})`,
+          };
+          setAutoDetectedBarcode(currentBarcodeObj);
+        }
+      }
+
       const inferredProductName =
         data.product_name ||
         productNameInput ||
@@ -379,6 +454,7 @@ export default function LiveInspectionScanner() {
     setPreviewUrl(null);
     setResults(null);
     setErrorMessage(null);
+    setAutoDetectedBarcode(null);
   };
 
   // Calculations from results - ignore Country of Origin if failed/missing
@@ -592,7 +668,7 @@ export default function LiveInspectionScanner() {
                     Auditing Package Declarations...
                   </p>
                   <p className="text-slate-400 text-xs mt-1 font-mono">
-                    Gemini 2.5 Flash Multimodal Vision • Spatial Localization
+                    Gemini 2.5 Flash Multimodal Vision • Optical Barcode &amp; PCR Audit
                   </p>
                 </div>
               )}
@@ -615,10 +691,32 @@ export default function LiveInspectionScanner() {
 
               {/* Barcode Verification & Anti-Tamper Card */}
               <BarcodeVerificationCard
+                autoScannedBarcode={autoDetectedBarcode?.code}
+                autoBarcodeSource={autoDetectedBarcode?.source}
                 currentOcrMrp={parsedOcrMrp}
+                currentOcrQuantity={parsedOcrQuantity}
                 onApplyProductInfo={(product) => {
                   if (product.name) setProductNameInput(product.name);
                   if (product.manufacturer) setManufacturerInput(product.manufacturer);
+                  if (savedData) {
+                    setSavedData((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            product: {
+                              ...prev.product,
+                              name: product.name || prev.product.name,
+                              manufacturer: product.manufacturer || prev.product.manufacturer,
+                              mrp: product.mrp > 0 ? product.mrp : prev.product.mrp,
+                              netQuantity: product.netQuantity || prev.product.netQuantity,
+                            },
+                          }
+                        : null
+                    );
+                    updateInspectionProduct(savedData.inspection.id, {
+                      productName: product.name,
+                    });
+                  }
                 }}
                 onAddViolation={handleAddCustomViolation}
               />

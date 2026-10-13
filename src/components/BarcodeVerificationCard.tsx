@@ -34,6 +34,8 @@ export interface MasterProductRecord {
 interface BarcodeVerificationCardProps {
   currentOcrMrp?: number;
   currentOcrQuantity?: string;
+  autoScannedBarcode?: string | null;
+  autoBarcodeSource?: string | null;
   onApplyProductInfo?: (product: MasterProductRecord) => void;
   onAddViolation?: (violation: {
     ruleCode: string;
@@ -46,11 +48,15 @@ interface BarcodeVerificationCardProps {
 export default function BarcodeVerificationCard({
   currentOcrMrp,
   currentOcrQuantity,
+  autoScannedBarcode,
+  autoBarcodeSource,
   onApplyProductInfo,
   onAddViolation,
 }: BarcodeVerificationCardProps) {
-  const [barcodeInput, setBarcodeInput] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState(autoScannedBarcode || "");
+  const [autoDetectedSource, setAutoDetectedSource] = useState<string | null>(autoBarcodeSource || null);
   const [isLoading, setIsLoading] = useState(false);
+  const lastScannedRef = React.useRef<string | null>(null);
   const [lookupResult, setLookupResult] = useState<{
     found: boolean;
     source?: string;
@@ -61,34 +67,52 @@ export default function BarcodeVerificationCard({
     message?: string;
   } | null>(null);
 
-  const handleLookup = async (codeToLookup?: string) => {
-    const code = (codeToLookup || barcodeInput).trim();
-    if (!code) return;
+  const executeLookup = React.useCallback(
+    async (code: string) => {
+      const clean = code.trim();
+      if (!clean) return;
 
-    setIsLoading(true);
-    setLookupResult(null);
+      setIsLoading(true);
+      setLookupResult(null);
 
-    try {
-      const res = await fetch(`/api/barcode/${encodeURIComponent(code)}`);
-      const data = await res.json();
-      setLookupResult(data);
+      try {
+        const res = await fetch(`/api/barcode/${encodeURIComponent(clean)}`);
+        const data = await res.json();
+        setLookupResult(data);
 
-      if (data.found && data.product && onApplyProductInfo) {
-        onApplyProductInfo(data.product);
+        if (data.found && data.product && onApplyProductInfo) {
+          onApplyProductInfo(data.product);
+        }
+      } catch (err) {
+        console.error("Barcode lookup error:", err);
+        setLookupResult({
+          found: false,
+          message: "Failed to connect to master barcode registry.",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Barcode lookup error:", err);
-      setLookupResult({
-        found: false,
-        message: "Failed to connect to master barcode registry.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    [onApplyProductInfo]
+  );
+
+  const handleLookup = (codeToLookup?: string) => {
+    executeLookup(codeToLookup || barcodeInput);
   };
+
+  React.useEffect(() => {
+    if (autoScannedBarcode && autoScannedBarcode.trim() && autoScannedBarcode !== lastScannedRef.current) {
+      const code = autoScannedBarcode.trim();
+      lastScannedRef.current = code;
+      setBarcodeInput(code);
+      setAutoDetectedSource(autoBarcodeSource || "Package Optical Scanner");
+      executeLookup(code);
+    }
+  }, [autoScannedBarcode, autoBarcodeSource, executeLookup]);
 
   const handleQuickSelect = (code: string) => {
     setBarcodeInput(code);
+    setAutoDetectedSource(null);
     handleLookup(code);
   };
 
@@ -132,6 +156,22 @@ export default function BarcodeVerificationCard({
           </Badge>
         )}
       </div>
+
+      {/* Auto-detected Barcode Notification */}
+      {autoDetectedSource && (
+        <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs">
+          <div className="flex items-center gap-2 text-blue-300">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <span className="text-[11px] font-medium">Auto-detected from package</span>
+          </div>
+          <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-300 font-mono">
+            {autoDetectedSource}
+          </Badge>
+        </div>
+      )}
 
       {/* Input & Lookup Row */}
       <div className="flex gap-2">
@@ -219,6 +259,8 @@ export default function BarcodeVerificationCard({
                   <span className="font-mono font-bold text-emerald-400">
                     {lookupResult.product.mrp > 0
                       ? `₹${lookupResult.product.mrp.toFixed(2)}`
+                      : currentOcrMrp && currentOcrMrp > 0
+                      ? `₹${currentOcrMrp.toFixed(2)} (Label OCR)`
                       : "Official Tariff"}
                   </span>
                 </div>
@@ -227,7 +269,11 @@ export default function BarcodeVerificationCard({
                     Standard Quantity
                   </span>
                   <span className="font-mono font-semibold text-slate-200">
-                    {lookupResult.product.netQuantity || "1 Standard Pack"}
+                    {lookupResult.product.netQuantity &&
+                    !lookupResult.product.netQuantity.includes("undefined") &&
+                    lookupResult.product.netQuantity !== "Standard Net Content"
+                      ? lookupResult.product.netQuantity
+                      : currentOcrQuantity || lookupResult.product.netQuantity || "1 Standard Pack"}
                   </span>
                 </div>
                 <div>
