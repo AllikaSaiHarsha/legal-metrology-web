@@ -26,6 +26,7 @@ import {
   ScanSearch,
   ArrowUpRight,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 
 import Sidebar from "@/components/Sidebar";
@@ -155,12 +156,19 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Link href="/scan">
                   <Button variant="default" size="lg" className="shadow-blue-600/30">
                     <ScanSearch className="w-4 h-4 mr-1.5" />
                     <span>Launch Live Scanner</span>
                     <ArrowUpRight className="w-4 h-4 ml-1 opacity-70" />
+                  </Button>
+                </Link>
+
+                <Link href="/map">
+                  <Button variant="outline" size="lg" className="border-slate-700 bg-slate-900/60 text-slate-200 hover:text-white hover:bg-slate-800">
+                    <MapPin className="w-4 h-4 mr-1.5 text-blue-400" />
+                    <span>Territorial GIS Map</span>
                   </Button>
                 </Link>
               </div>
