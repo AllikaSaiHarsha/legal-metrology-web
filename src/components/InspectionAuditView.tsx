@@ -37,15 +37,27 @@ import { getImageFromIDB } from "@/lib/idb";
 
 interface InspectionAuditViewProps {
   inspection: Inspection;
-  product: Product;
-  violations: Violation[];
+  product?: Product;
+  violations?: Violation[];
 }
 
 export default function InspectionAuditView({
   inspection,
-  product,
-  violations,
+  product: rawProduct,
+  violations = [],
 }: InspectionAuditViewProps) {
+  const product: Product = rawProduct || {
+    id: inspection?.productId || "PRD-DEFAULT",
+    name: "Packaged Commodity",
+    category: "Packaged Goods (PCR 2011)",
+    manufacturer: "Per Packaging Label",
+    mfgDate: "Per Label",
+    expiryDate: "Per Label",
+    batchNo: "Per Label",
+    netQuantity: "Declared on Pack",
+    mrp: 0,
+    complianceStatus: "compliant",
+  };
   const [showBoxes, setShowBoxes] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredBox, setHoveredBox] = useState<any | null>(null);

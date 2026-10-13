@@ -332,7 +332,21 @@ export function getInspectionById(id: string): {
   if (!inspection) {
     return { violations: [] };
   }
-  const product = store.products.find((p) => p.id === inspection.productId);
+  let product = store.products.find((p) => p.id === inspection.productId);
+  if (!product) {
+    product = {
+      id: inspection.productId || `PRD-${id}`,
+      name: "Packaged Commodity",
+      category: "Packaged Goods (PCR 2011)",
+      manufacturer: "Per Packaging Label",
+      mfgDate: "Per Label",
+      expiryDate: "Per Label",
+      batchNo: "Per Label Declaration",
+      netQuantity: "Declared on Pack",
+      mrp: 0,
+      complianceStatus: inspection.status === "completed" ? "compliant" : "non-compliant",
+    };
+  }
   const violations = store.violations.filter((v) => v.inspectionId === id);
 
   return { inspection, product, violations };

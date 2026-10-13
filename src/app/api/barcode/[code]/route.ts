@@ -47,6 +47,16 @@ function resolveStandardMrp(barcode: string, productName: string, brand: string,
     "8901764012258": 45.0, // Coca-Cola 750ml
     "8901764032119": 70.0, // Coca-Cola 1.25L
     "8901764042118": 95.0, // Coca-Cola 2L
+    // PepsiCo Beverages
+    "8902080105045": 40.0, // Pepsi 300ml can (India)
+    "8902080105014": 20.0, // Pepsi 250ml
+    "8902080105069": 40.0, // Mirinda 300ml can
+    "8902080105052": 40.0, // 7UP 300ml can
+    "8902080105076": 40.0, // Mountain Dew 300ml can
+    "8901764022233": 40.0, // Thums Up 300ml can
+    "8901764032232": 40.0, // Sprite 300ml can
+    "8901764042231": 40.0, // Fanta 300ml can
+    "8901764052230": 40.0, // Limca 300ml can
     // Staples & FMCG
     "8901030018507": 28.0, // Tata Salt 1kg
     "8901262010041": 275.0, // Amul Butter 500g
@@ -163,7 +173,9 @@ export async function GET(
         p.batchNo.toLowerCase() === cleanCode.toLowerCase() ||
         (cleanCode === "8901030018507" && p.name.includes("Tata Salt")) ||
         (cleanCode === "8901262010041" && p.name.includes("Amul Butter")) ||
-        (cleanCode === "8901063012213" && p.name.includes("Britannia"))
+        (cleanCode === "8901063012213" && p.name.includes("Britannia")) ||
+        (cleanCode === "8902080105045" && p.name.toLowerCase().includes("pepsi")) ||
+        (cleanCode === "5449000000996" && p.name.toLowerCase().includes("coca"))
     );
 
     if (localMatch) {
