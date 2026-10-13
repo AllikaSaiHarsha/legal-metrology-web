@@ -13,6 +13,7 @@ interface Props {
 
 export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
   const [showBoxes, setShowBoxes] = useState(true);
+  const [showCrosshairs, setShowCrosshairs] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
 
@@ -21,9 +22,19 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
   const handleResetZoom = () => setZoom(1);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center p-6 select-none">
+    <div className="relative w-full h-full flex flex-col items-center justify-center select-none">
+      {/* Top Millimeter Ruler Bar */}
+      <div className="w-full max-w-xl h-5 bg-slate-900 border-x border-t border-slate-800 rounded-t-2xl flex items-center justify-between px-6 text-[9px] font-mono text-slate-500 overflow-hidden">
+        <span>0mm</span>
+        <span>50mm</span>
+        <span>100mm</span>
+        <span>150mm</span>
+        <span>200mm</span>
+        <span>250mm</span>
+      </div>
+
       {/* Viewer Box (Liquid Glass frame) */}
-      <div className="relative w-full max-w-xl max-h-[620px] rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
+      <div className="relative w-full max-w-xl max-h-[580px] rounded-b-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
         {/* Precision coordinate grid */}
         <div
           className="absolute inset-0 opacity-15 pointer-events-none"
@@ -34,15 +45,26 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
           }}
         />
 
+        {/* Forensic Laser Crosshairs */}
+        {showCrosshairs && (
+          <div className="absolute inset-0 pointer-events-none z-10">
+            <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+            <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-red-500/50 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            </div>
+          </div>
+        )}
+
         <div
-          className="relative transition-transform duration-200 ease-out inline-block w-fit h-fit max-h-[560px]"
+          className="relative transition-transform duration-200 ease-out inline-block w-fit h-fit max-h-[540px]"
           style={{ transform: `scale(${zoom})` }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt="Scanned Package Label"
-            className="max-h-[540px] max-w-full w-auto object-contain rounded-xl block pointer-events-none select-none"
+            className="max-h-[520px] max-w-full w-auto object-contain rounded-xl block pointer-events-none select-none"
           />
 
           {/* Bounding Box Overlays */}
@@ -175,7 +197,20 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
           title="Toggle Bounding Boxes"
         >
           {showBoxes ? <Eye className="w-4 h-4 text-blue-400" /> : <EyeOff className="w-4 h-4" />}
-          <span>{showBoxes ? "Hide Boxes" : "Show Boxes"}</span>
+          <span>{showBoxes ? "Boxes" : "Boxes Off"}</span>
+        </button>
+
+        <button
+          onClick={() => setShowCrosshairs(!showCrosshairs)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+            showCrosshairs
+              ? "bg-red-500/20 text-red-300 border border-red-500/30"
+              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+          }`}
+          title="Toggle Reticle Crosshairs"
+        >
+          <span className="text-red-400 font-bold">+</span>
+          <span>Reticule</span>
         </button>
 
         <div className="w-px h-5 bg-slate-700/60 mx-1" />

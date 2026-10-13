@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
+import SpatialHeader from "@/components/SpatialHeader";
+import FloatingDock from "@/components/FloatingDock";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,15 +91,25 @@ export default function ViolationsPage() {
   const lowCount = violations.filter((v) => v.severity.toLowerCase() === "low").length;
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
-      <Sidebar />
-      <main className="flex-1 ml-72">
-        <TopBar
-          title="Violations Database"
-          subtitle="Non-compliance offenses and statutory infractions recorded under PCR 2011"
-        />
-
-        <div className="p-8 max-w-7xl space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
+      <SpatialHeader />
+      <main className="max-w-7xl mx-auto px-6 lg:px-8 pt-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-100">
+              Violations &amp; Infractions Database
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Non-compliance offenses and statutory infractions recorded under Packaged Commodities Rules, 2011
+            </p>
+          </div>
+          <Link href="/scan">
+            <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Audit New Sample</span>
+            </Button>
+          </Link>
+        </div>
           {/* Top Severity Breakdown Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <BentoCard delay={0.05} glowColor="rgba(239, 68, 68, 0.2)">
@@ -296,8 +306,8 @@ export default function ViolationsPage() {
               </TableBody>
             </Table>
           </div>
-        </div>
       </main>
+      <FloatingDock />
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
+import SpatialHeader from "@/components/SpatialHeader";
+import FloatingDock from "@/components/FloatingDock";
 import { Package, Search, Factory, Calendar, Activity, ArrowUpRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,23 +54,25 @@ export default function ProductsPage() {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
-      <Sidebar />
-      <main className="flex-1 ml-72">
-        <TopBar
-          title="Product Catalog"
-          subtitle="Database of audited packaged commodities and manufacturers"
-          action={
-            <Link href="/scan">
-              <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Audit New Product</span>
-              </Button>
-            </Link>
-          }
-        />
-
-        <div className="p-8 max-w-7xl space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
+      <SpatialHeader />
+      <main className="max-w-7xl mx-auto px-6 lg:px-8 pt-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-100">
+              Packaged Commodity Directory
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Database of audited packaged commodities and verified manufacturers under PCR 2011
+            </p>
+          </div>
+          <Link href="/scan">
+            <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Audit New Commodity</span>
+            </Button>
+          </Link>
+        </div>
           {/* Header Controls */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl liquid-glass-card">
             <div>
@@ -159,8 +161,8 @@ export default function ProductsPage() {
               )}
             </div>
           )}
-        </div>
       </main>
+      <FloatingDock />
     </div>
   );
 }

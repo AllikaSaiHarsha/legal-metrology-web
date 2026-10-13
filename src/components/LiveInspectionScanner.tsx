@@ -32,6 +32,8 @@ import {
   saveScannedInspection,
   updateInspectionProduct,
   setCachedImage,
+  getCachedImage,
+  loadStore,
   Inspection,
   Product,
   Violation,
@@ -89,12 +91,71 @@ export default function LiveInspectionScanner() {
   } | null>(null);
 
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [triageQueue, setTriageQueue] = useState<{ inspection: Inspection; product?: Product }[]>([]);
+  const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkBackendHealth().then((online) => setBackendOnline(online));
+    try {
+      const store = loadStore();
+      const queue = store.inspections.slice(0, 8).map((ins) => ({
+        inspection: ins,
+        product: store.products.find((p) => p.id === ins.productId),
+      }));
+      setTriageQueue(queue);
+      if (queue.length > 0 && !previewUrl) {
+        const first = queue[0];
+        const img = getCachedImage(first.inspection.id) || first.inspection.imageUrl;
+        if (img) {
+          setSelectedQueueId(first.inspection.id);
+          setPreviewUrl(img);
+          setDataUrl(img);
+          setProductNameInput(first.product?.name || "Packaged Commodity");
+          setManufacturerInput(first.product?.manufacturer || "Per Label Declaration");
+          if (first.inspection.detections && first.inspection.detections.length > 0) {
+            setResults({
+              filename: `${first.inspection.id}.jpg`,
+              original_width: 1000,
+              original_height: 1000,
+              detections: first.inspection.detections,
+              product_name: first.product?.name,
+              manufacturer: first.product?.manufacturer,
+              image_url: img,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }, []);
+
+  const handleSelectQueueItem = (item: { inspection: Inspection; product?: Product }) => {
+    setSelectedQueueId(item.inspection.id);
+    const img = getCachedImage(item.inspection.id) || item.inspection.imageUrl;
+    setSelectedFile(null);
+    setPreviewUrl(img || null);
+    setDataUrl(img || null);
+    setProductNameInput(item.product?.name || "Packaged Commodity");
+    setManufacturerInput(item.product?.manufacturer || "Per Label Declaration");
+
+    if (item.inspection.detections && item.inspection.detections.length > 0) {
+      setResults({
+        filename: `${item.inspection.id}.jpg`,
+        original_width: 1000,
+        original_height: 1000,
+        detections: item.inspection.detections,
+        product_name: item.product?.name,
+        manufacturer: item.product?.manufacturer,
+        image_url: img,
+      });
+    } else {
+      setResults(null);
+    }
+    setSavedData(null);
+  };
 
   useEffect(() => {
     return () => {
@@ -360,9 +421,9 @@ export default function LiveInspectionScanner() {
       : 100;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950 text-slate-100 select-none">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950 text-slate-100 select-none pb-20">
       {/* Header bar */}
-      <div className="px-8 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/80 backdrop-blur-xl">
+      <div className="px-6 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/90 backdrop-blur-xl shrink-0">
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -374,19 +435,27 @@ export default function LiveInspectionScanner() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-slate-100 tracking-tight">
-                Live Package Scanner
+                Optical Inspection Studio
               </h2>
-              <Badge variant="default" className="text-[10px]">
+              <Badge variant="default" className="text-[10px] bg-blue-600/20 text-blue-300 border-blue-500/30">
                 Rule 6 (PCR 2011)
               </Badge>
+              {results && (
+                <Badge
+                  variant={failedCount > 0 ? "destructive" : "success"}
+                  className="text-[10px]"
+                >
+                  {failedCount > 0 ? `${failedCount} VIOLATIONS` : "FULLY COMPLIANT"}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Multimodal Gemini 2.5 Flash neural vision &amp; statutory compliance pipeline
+              Multimodal Gemini 2.5 Flash neural vision • Statutory package metrology pipeline
             </p>
           </div>
         </div>
 
-        {/* Backend health status badge */}
+        {/* Action Controls & AI Backend Status */}
         <div className="flex items-center gap-3">
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium font-mono ${
@@ -412,7 +481,7 @@ export default function LiveInspectionScanner() {
                 ? "Gemini AI Engine Online"
                 : backendOnline === false
                 ? "Engine Offline"
-                : "Probing AI Engine..."}
+                : "Probing Engine..."}
             </span>
           </div>
 
@@ -421,438 +490,372 @@ export default function LiveInspectionScanner() {
               variant="outline"
               size="sm"
               onClick={resetAll}
-              className="gap-1.5 text-xs text-slate-300"
+              className="gap-1.5 text-xs text-slate-300 border-slate-800 hover:bg-slate-900"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reset Scan</span>
+              <span>Reset Canvas</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        {!previewUrl ? (
-          /* Step 1: Upload Dropzone (Spatial Liquid Glass) */
-          <div className="max-w-4xl mx-auto p-10 flex flex-col items-center justify-center min-h-[78vh]">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-8"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600/15 border border-blue-500/30 text-blue-400 mb-4 shadow-xl shadow-blue-950/60">
-                <ScanSearch className="w-8 h-8" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-100 tracking-tight">
-                Inspect Commodity Packaging
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={onFileInputChange}
+      />
+
+      {/* 3-Pane Studio Workbench */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Pane 1: Triage Queue & Inspection History */}
+        <div className="w-72 border-r border-slate-800/80 bg-slate-950/80 flex flex-col shrink-0">
+          <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Triage Queue
               </h3>
-              <p className="text-xs text-slate-400 mt-2 max-w-lg mx-auto leading-relaxed">
-                Upload product packaging photographs or frontal label artwork.
-                The Gemini multimodal engine will detect bounding boxes, parse statutory text, and verify declarations under Legal Metrology Rules, 2011.
+              <p className="text-[11px] text-slate-500">
+                {triageQueue.length} packaged batches
               </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+            </div>
+            <button
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full max-w-2xl p-12 rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center liquid-glass-card ${
-                isDragging
-                  ? "border-blue-500 bg-blue-600/15 shadow-2xl shadow-blue-600/25"
-                  : "border-slate-700/60 hover:border-blue-500/60 hover:bg-slate-900/60"
-              }`}
+              className="p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs flex items-center gap-1 transition-colors"
+              title="Upload new packaging sample"
             >
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={onFileInputChange}
-              />
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span className="font-medium text-[11px]">Upload</span>
+            </button>
+          </div>
 
-              <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/50 text-blue-400 mb-4 group-hover:scale-105 transition-transform shadow-lg shadow-blue-950/40">
-                <UploadCloud className="w-10 h-10" />
+          {/* Queue Items List */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {triageQueue.map((item) => {
+              const isSelected = selectedQueueId === item.inspection.id;
+              const hasViolations = item.inspection.status === "in-progress" || (item.inspection.complianceScore ?? 100) < 100;
+              const itemImg = getCachedImage(item.inspection.id) || item.inspection.imageUrl;
+
+              return (
+                <div
+                  key={item.inspection.id}
+                  onClick={() => handleSelectQueueItem(item)}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    isSelected
+                      ? "bg-blue-600/15 border-blue-500/50 shadow-md shadow-blue-950/50"
+                      : "bg-slate-900/40 hover:bg-slate-900/80 border-slate-800/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {itemImg ? (
+                        <img
+                          src={itemImg}
+                          alt="sample"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ScanSearch className="w-5 h-5 text-slate-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-200 truncate">
+                        {item.product?.name || item.inspection.id}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        {item.inspection.id}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            hasViolations ? "bg-amber-400" : "bg-emerald-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-[10px] font-medium ${
+                            hasViolations ? "text-amber-300" : "text-emerald-300"
+                          }`}
+                        >
+                          {hasViolations ? "Infractions" : "Pass"}
+                        </span>
+                        <span className="text-[10px] text-slate-500 ml-auto font-mono">
+                          {item.inspection.complianceScore}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {triageQueue.length === 0 && (
+              <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                No items in queue. Upload a package to begin.
               </div>
-
-              <h4 className="text-base font-semibold text-slate-200">
-                Drag and drop your package photo here
-              </h4>
-              <p className="text-xs text-slate-500 mt-1 mb-6">
-                Supports JPG, PNG, WEBP high-resolution package label scans
-              </p>
-
-              <Button variant="default" size="default" className="shadow-blue-600/30">
-                <UploadCloud className="w-4 h-4 mr-1.5" />
-                Browse Packaging Files
-              </Button>
-            </motion.div>
-
-            {errorMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-3"
-              >
-                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                <span>{errorMessage}</span>
-              </motion.div>
             )}
           </div>
-        ) : (
-          /* Step 2: Split Screen Inspection Workspace */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-full min-h-[calc(100vh-120px)]">
-            {/* Left Panel: Uploaded Image & Bounding Boxes */}
-            <div className="bg-slate-950 flex flex-col items-center justify-center p-6 border-r border-slate-800/80 relative overflow-hidden">
-              {/* Scan Trigger Bar if not analyzed yet */}
-              {!results && !isScanning && (
-                <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-100 truncate max-w-xs">
-                      {selectedFile?.name}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Ready for automated rule verification
-                    </p>
-                  </div>
-                  <Button
-                    variant="default"
-                    size="default"
-                    onClick={runScan}
-                    className="shadow-blue-600/30"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1.5" />
-                    <span>Run AI Analysis</span>
-                  </Button>
-                </div>
-              )}
+        </div>
 
-              {/* Scanning Laser Sweep Effect */}
-              {isScanning && (
-                <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center">
-                  <div className="scanner-laser-line" />
-                  <div className="relative w-44 h-44 flex items-center justify-center mb-6">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 rounded-full border-2 border-blue-500/20 border-t-blue-500"
-                    />
-                    <div className="w-20 h-20 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-600/30">
-                      <ScanSearch className="w-10 h-10 animate-pulse" />
-                    </div>
-                  </div>
-                  <p className="text-slate-100 font-bold text-base tracking-tight">
-                    Auditing Package Declarations...
-                  </p>
-                  <p className="text-slate-400 text-xs mt-1 font-mono">
-                    Gemini 2.5 Flash Multimodal Vision • Spatial Localization
-                  </p>
-                </div>
-              )}
-
-              {/* Interactive Bounding Box Viewer */}
-              <BackendBoundingBoxViewer
-                imageUrl={previewUrl}
-                results={results}
+        {/* Pane 2: Central Optical Bench Canvas */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative overflow-hidden">
+          {/* Top Workbench Toolbar */}
+          <div className="px-6 py-2.5 bg-slate-900/60 border-b border-slate-800/80 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xs text-slate-400">Package:</span>
+              <input
+                type="text"
+                value={productNameInput}
+                onChange={(e) => setProductNameInput(e.target.value)}
+                placeholder="Product Name..."
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 w-52 focus:outline-none focus:border-blue-500 font-medium"
               />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-slate-400">Height (mm):</span>
+                <input
+                  type="number"
+                  value={packageHeightInput}
+                  onChange={(e) => setPackageHeightInput(e.target.value)}
+                  placeholder="e.g. 180"
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 w-20 focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
             </div>
 
-            {/* Right Panel: Rule Checklist & Analysis */}
-            <div className="bg-slate-900/40 overflow-y-auto p-8 flex flex-col gap-6">
-              {errorMessage && (
-                <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-3">
-                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={runScan}
+                disabled={isScanning || !selectedFile}
+                className="gap-1.5 text-xs shadow-lg shadow-blue-600/20"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isScanning ? "Analyzing..." : "Run AI Analysis"}</span>
+              </Button>
+            </div>
+          </div>
 
-              {/* Inspection Summary Card */}
-              <div className="p-5 rounded-2xl liquid-glass-card shadow-xl">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-100">
-                      {results ? results.filename : selectedFile?.name}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">
-                      {results
-                        ? `${results.original_width} × ${results.original_height} px • ${detections.length} declarations audited`
-                        : "Awaiting analysis trigger"}
-                    </p>
-                  </div>
-
-                  <Badge
-                    variant={
-                      results
-                        ? failedCount > 0
-                          ? "destructive"
-                          : "success"
-                        : "secondary"
-                    }
-                  >
-                    {results
-                      ? failedCount > 0
-                        ? "VIOLATIONS DETECTED"
-                        : "COMPLIANT"
-                      : "READY TO SCAN"}
-                  </Badge>
-                </div>
-
-                {/* KPI Metrics bar */}
-                <div className="grid grid-cols-4 gap-3 pt-3 border-t border-slate-800/80">
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                      Pass
-                    </p>
-                    <p className="text-xl font-bold text-emerald-400 mt-0.5 font-mono">
-                      {passedCount}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                      Fail
-                    </p>
-                    <p className="text-xl font-bold text-red-400 mt-0.5 font-mono">
-                      {failedCount}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                      Pending
-                    </p>
-                    <p className="text-xl font-bold text-yellow-400 mt-0.5 font-mono">
-                      {pendingCount}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                      Score
-                    </p>
-                    <p className="text-xl font-bold text-slate-100 mt-0.5 font-mono">
-                      {complianceScore}%
-                    </p>
+          {/* Workbench Canvas Display */}
+          <div className="flex-1 relative flex items-center justify-center p-4 overflow-hidden">
+            {isScanning && (
+              <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center">
+                <div className="scanner-laser-line" />
+                <div className="relative w-36 h-36 flex items-center justify-center mb-4">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border-2 border-blue-500/20 border-t-blue-500"
+                  />
+                  <div className="w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-600/30">
+                    <ScanSearch className="w-8 h-8 animate-pulse" />
                   </div>
                 </div>
-
-                {/* Auto-Stored to Database & PDF Certificate CTA */}
-                {results && savedData && (
-                  <div className="mt-4 pt-4 border-t border-slate-800/80 space-y-3">
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent border border-emerald-500/25 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-emerald-400">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                          </span>
-                          <span className="text-xs font-bold font-mono">
-                            Auto-persisted as {savedData.inspection.id}
-                          </span>
-                        </div>
-                        <Badge variant="success" className="text-[10px]">
-                          PostgreSQL Synced
-                        </Badge>
-                      </div>
-
-                      {/* Commodity Name & Manufacturer metadata */}
-                      <div className="grid grid-cols-2 gap-2.5 pt-1">
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">
-                            Commodity Identity
-                          </label>
-                          <input
-                            type="text"
-                            value={productNameInput}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setProductNameInput(val);
-                              if (savedData) {
-                                setSavedData((prev) =>
-                                  prev ? { ...prev, product: { ...prev.product, name: val } } : null
-                                );
-                                updateInspectionProduct(savedData.inspection.id, {
-                                  productName: val,
-                                });
-                              }
-                            }}
-                            className="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-700/60 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">
-                            Manufacturer / Packer
-                          </label>
-                          <input
-                            type="text"
-                            value={manufacturerInput}
-                            placeholder="Per Packaging Label"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setManufacturerInput(val);
-                              if (savedData) {
-                                setSavedData((prev) =>
-                                  prev ? { ...prev, product: { ...prev.product, manufacturer: val } } : null
-                                );
-                                updateInspectionProduct(savedData.inspection.id, {
-                                  manufacturer: val,
-                                });
-                              }
-                            }}
-                            className="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-700/60 rounded-lg text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Action Links */}
-                      <div className="flex items-center gap-2 pt-1">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleGeneratePDF}
-                          className="flex-1 shadow-blue-600/30 text-xs"
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1" />
-                          <span>Generate PDF Certificate</span>
-                        </Button>
-
-                        <Link href="/inspections">
-                          <Button variant="outline" size="sm" className="text-xs gap-1">
-                            <span>Register</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
-                        </Link>
-
-                        <Link href={`/inspection/${savedData.inspection.id}`}>
-                          <Button variant="outline" size="sm" className="text-xs gap-1">
-                            <span>Split Audit</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <p className="text-slate-100 font-bold text-sm tracking-tight">
+                  Auditing Package Declarations...
+                </p>
+                <p className="text-slate-400 text-xs mt-1 font-mono">
+                  Gemini 2.5 Flash Multimodal Vision • Spatial Localization
+                </p>
               </div>
+            )}
 
-              {/* Rule Checklist Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                  <FileCheck className="w-4 h-4 text-blue-400" />
-                  <span>Rule 6 Statutory Audit Checklist</span>
-                </div>
-
-                {results && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const blob = new Blob([JSON.stringify(results, null, 2)], {
-                        type: "application/json",
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `compliance-${results.filename}.json`;
-                      a.click();
-                    }}
-                    className="text-xs text-blue-400 hover:text-blue-300 gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export JSON</span>
-                  </Button>
-                )}
+            {previewUrl ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <BackendBoundingBoxViewer
+                  imageUrl={previewUrl}
+                  results={results}
+                />
               </div>
+            ) : (
+              /* Dropzone if empty */
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full max-w-xl p-12 rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center liquid-glass-card ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-600/15 shadow-2xl shadow-blue-600/25"
+                    : "border-slate-800 hover:border-blue-500/60 hover:bg-slate-900/50"
+                }`}
+              >
+                <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/50 text-blue-400 mb-4 shadow-lg shadow-blue-950/40">
+                  <UploadCloud className="w-10 h-10" />
+                </div>
+                <h4 className="text-base font-semibold text-slate-200">
+                  Load Package Sample
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 mb-5 max-w-sm">
+                  Drag and drop packaging artwork or select from the triage queue on the left.
+                </p>
+                <Button variant="outline" size="sm" className="border-slate-700 text-xs">
+                  Browse Local Files
+                </Button>
+              </div>
+            )}
+          </div>
 
-              {/* Accordion Cards */}
-              <div className="space-y-3">
-                {results ? (
-                  detections.length === 0 ? (
-                    <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-slate-400 text-xs">
-                      No text detected with high confidence in this image. Ensure the image is well-lit and packaging text is legible.
-                    </div>
-                  ) : (
-                    detections.map((detection, index) => {
-                      const isFailed = detection.status === "Failed";
-                      const isPassed = detection.status === "Passed";
+          {/* Workbench Status Footer Bar */}
+          <div className="px-6 py-2 bg-slate-950/90 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+            <div className="flex items-center gap-4">
+              <span>CANVAS: {results ? `${results.original_width}×${results.original_height}px` : "1000×1000mm"}</span>
+              <span>BOXES DETECTED: {detections.length}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-emerald-400">LEGAL METROLOGY ACT, 2009</span>
+              <span>ISO/IEC 17025 COMPLIANT</span>
+            </div>
+          </div>
+        </div>
 
-                      const statusType: "pass" | "fail" | "warning" = isFailed
-                        ? "fail"
-                        : isPassed
-                        ? "pass"
-                        : "warning";
+        {/* Pane 3: Statutory Inspector HUD */}
+        <div className="w-[400px] border-l border-slate-800/80 bg-slate-950/90 flex flex-col shrink-0 overflow-hidden">
+          {/* Header with Score and Actions */}
+          <div className="p-4 border-b border-slate-800/80 bg-slate-900/40">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Statutory Inspector HUD
+                </h3>
+              </div>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
+                {complianceScore}% SCORE
+              </span>
+            </div>
 
-                      const severityType: "critical" | "major" | "minor" = isFailed
-                        ? "critical"
-                        : isPassed
-                        ? "minor"
-                        : "major";
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveInspection}
+                disabled={!results}
+                className="gap-1.5 text-xs border-slate-800 hover:bg-slate-900"
+              >
+                <BookmarkCheck className="w-3.5 h-3.5 text-blue-400" />
+                <span>Save Record</span>
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleGeneratePDF}
+                disabled={!results}
+                className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-950"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PDF Certificate</span>
+              </Button>
+            </div>
+          </div>
 
-                      const ruleCodeMap: Record<string, string> = {
-                        MRP: "LM-R6(1)(a)",
-                        "Net Weight": "LM-R6(1)(b)",
-                        "Manufacture Date": "LM-R6(1)(d)",
-                        "Expire Date": "LM-R6(1)(e)",
-                        "Consumer Info": "LM-R6(1)(g)",
-                      };
-
-                      const categoryKey = detection.category || "";
-                      const assignedRuleCode =
-                        ruleCodeMap[categoryKey] || `LM-OCR-${String(index + 1).padStart(3, "0")}`;
-
-                      const parts =
-                        detection.label.match(/^\[(.*?)\]\s*(.*?)\s*\((.*?)\)$/) ||
-                        detection.label.match(/^(.*?)\s*\((.*?)\)$/);
-                      const extractedText = parts
-                        ? parts.length === 4
-                          ? parts[2]
-                          : parts[1]
-                        : detection.label;
-                      const ruleMessage = parts
-                        ? parts.length === 4
-                          ? parts[3]
-                          : parts[2]
-                        : detection.label;
-
-                      return (
-                        <AccordionCard
-                          key={index}
-                          ruleCode={assignedRuleCode}
-                          title={categoryKey ? `${categoryKey} — ${ruleMessage}` : ruleMessage}
-                          severity={severityType}
-                          status={statusType}
-                          description={`OCR bounding box coordinates on package: [x:${detection.box.x}, y:${detection.box.y}, width:${detection.box.width}px, height:${detection.box.height}px].`}
-                          extractedValue={extractedText}
-                          expectedValue={
-                            isFailed
-                              ? "Mandatory declaration under Legal Metrology (Packaged Commodities) Rules, 2011"
-                              : undefined
-                          }
-                          remediation={undefined}
-                          defaultOpen={false}
-                        />
-                      );
-                    })
-                  )
-                ) : (
-                  <div className="p-10 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center flex flex-col items-center justify-center">
-                    <ScanSearch className="w-10 h-10 text-slate-600 mb-3" />
-                    <p className="text-slate-300 font-medium text-sm">
-                      No analysis performed yet
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                      Click &ldquo;Run AI Analysis&rdquo; to execute the Legal Metrology vision pipeline on this package.
-                    </p>
-                  </div>
-                )}
+          {/* Metadata Bar */}
+          <div className="p-3 border-b border-slate-800/60 bg-slate-900/20 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-[10px] text-slate-500 block">Manufacturer</span>
+              <input
+                type="text"
+                value={manufacturerInput}
+                onChange={(e) => setManufacturerInput(e.target.value)}
+                placeholder="Per Label"
+                className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-slate-300 text-xs mt-0.5"
+              />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-500 block">Status Summary</span>
+              <div className="flex items-center gap-1.5 mt-1 font-mono text-[11px]">
+                <span className="text-emerald-400">{passedCount} Passed</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-red-400">{failedCount} Infractions</span>
               </div>
             </div>
           </div>
-        )}
+
+          {/* Rule 6 Declarations List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {detections.length > 0 ? (
+              detections.map((detection, index) => {
+                const isPassed = detection.status === "Passed";
+                const isFailed = detection.status === "Failed";
+                const statusType: "pass" | "fail" | "warning" = isPassed
+                  ? "pass"
+                  : isFailed
+                  ? "fail"
+                  : "warning";
+
+                const severityType: "critical" | "major" | "minor" = isFailed
+                  ? "critical"
+                  : isPassed
+                  ? "minor"
+                  : "major";
+
+                const ruleCodeMap: Record<string, string> = {
+                  MRP: "LM-R6(1)(a)",
+                  "Net Weight": "LM-R6(1)(b)",
+                  "Manufacture Date": "LM-R6(1)(d)",
+                  "Expire Date": "LM-R6(1)(e)",
+                  "Consumer Info": "LM-R6(1)(g)",
+                };
+
+                const categoryKey = detection.category || "";
+                const assignedRuleCode =
+                  ruleCodeMap[categoryKey] || `LM-OCR-${String(index + 1).padStart(3, "0")}`;
+
+                const parts =
+                  detection.label.match(/^\[(.*?)\]\s*(.*?)\s*\((.*?)\)$/) ||
+                  detection.label.match(/^(.*?)\s*\((.*?)\)$/);
+                const extractedText = parts
+                  ? parts.length === 4
+                    ? parts[2]
+                    : parts[1]
+                  : detection.label;
+                const ruleMessage = parts
+                  ? parts.length === 4
+                    ? parts[3]
+                    : parts[2]
+                  : detection.label;
+
+                return (
+                  <AccordionCard
+                    key={index}
+                    ruleCode={assignedRuleCode}
+                    title={categoryKey ? `${categoryKey} — ${ruleMessage}` : ruleMessage}
+                    severity={severityType}
+                    status={statusType}
+                    description={`OCR bounding box coordinates on package: [x:${detection.box.x}, y:${detection.box.y}, width:${detection.box.width}px, height:${detection.box.height}px].`}
+                    extractedValue={extractedText}
+                    expectedValue={
+                      isFailed
+                        ? "Mandatory declaration under Legal Metrology (Packaged Commodities) Rules, 2011"
+                        : undefined
+                    }
+                    remediation={undefined}
+                    defaultOpen={false}
+                  />
+                );
+              })
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center flex flex-col items-center justify-center">
+                <ScanSearch className="w-8 h-8 text-slate-600 mb-2" />
+                <p className="text-slate-300 font-medium text-xs">
+                  Awaiting AI Analysis
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Click &ldquo;Run AI Analysis&rdquo; to execute the Legal Metrology vision pipeline on this package.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
