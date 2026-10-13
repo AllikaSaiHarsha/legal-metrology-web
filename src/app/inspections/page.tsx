@@ -18,8 +18,8 @@ import {
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
-import SpatialHeader from "@/components/SpatialHeader";
-import FloatingDock from "@/components/FloatingDock";
+import Sidebar from "@/components/Sidebar";
+import TopBar from "@/components/TopBar";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,25 +111,23 @@ export default function InspectionsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
-      <SpatialHeader />
-      <main className="max-w-7xl mx-auto px-6 lg:px-8 pt-6 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-100">
-              Inspections Registry
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Statutory enforcement audit history and compliance log under Legal Metrology Act, 2009
-            </p>
-          </div>
-          <Link href="/scan">
-            <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Launch Studio Scan</span>
-            </Button>
-          </Link>
-        </div>
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+      <Sidebar />
+      <main className="flex-1 ml-72">
+        <TopBar
+          title="Inspections Registry"
+          subtitle="Statutory enforcement audit history and compliance log"
+          action={
+            <Link href="/scan">
+              <Button size="sm" variant="default" className="shadow-blue-600/30 gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>New Label Scan</span>
+              </Button>
+            </Link>
+          }
+        />
+
+        <div className="p-8 space-y-6 max-w-7xl">
           {/* Top Quick Stats Grid (Bento) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <BentoCard delay={0.05} glowColor="rgba(37, 99, 235, 0.2)">
@@ -424,8 +422,8 @@ export default function InspectionsPage() {
               </div>
             </div>
           </div>
+        </div>
       </main>
-      <FloatingDock />
     </div>
   );
 }

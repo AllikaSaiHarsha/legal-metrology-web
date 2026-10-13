@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import FloatingDock from "@/components/FloatingDock";
+import Sidebar from "@/components/Sidebar";
 import LiveInspectionScanner from "@/components/LiveInspectionScanner";
 
 export default function ScanPage() {
   return (
-    <div className="h-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <main className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex min-h-screen bg-zinc-950">
+      <Sidebar />
+      <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">
         <LiveInspectionScanner />
       </main>
-      <FloatingDock />
     </div>
   );
 }
