@@ -2,16 +2,17 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Eye, EyeOff, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Eye, EyeOff, ZoomIn, ZoomOut, RotateCcw, Layers } from "lucide-react";
 import { AnalysisResult, Detection } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
   imageUrl: string;
   results: AnalysisResult | null;
+  panelLabel?: string;
 }
 
-export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
+export default function BackendBoundingBoxViewer({ imageUrl, results, panelLabel }: Props) {
   const [showBoxes, setShowBoxes] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
@@ -24,6 +25,13 @@ export default function BackendBoundingBoxViewer({ imageUrl, results }: Props) {
     <div className="relative w-full h-full flex flex-col items-center justify-center p-6 select-none">
       {/* Viewer Box (Liquid Glass frame) */}
       <div className="relative w-full max-w-xl max-h-[620px] rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
+        {panelLabel && (
+          <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-[11px] font-semibold text-slate-200 shadow-xl">
+            <Layers className="w-3.5 h-3.5 text-blue-400" />
+            <span>{panelLabel}</span>
+          </div>
+        )}
+
         {/* Precision coordinate grid */}
         <div
           className="absolute inset-0 opacity-15 pointer-events-none"

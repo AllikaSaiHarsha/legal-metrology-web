@@ -29,6 +29,7 @@ export interface Inspection {
   location: string;
   status: "completed" | "in-progress" | "scheduled";
   imageUrl: string;
+  imageUrls?: string[];
   findings: string[];
   complianceScore: number;
   detections?: Detection[];
@@ -344,6 +345,7 @@ export interface SaveScannedPayload {
   batchNo?: string;
   detections: Detection[];
   imageUrl: string;
+  imageUrls?: string[];
   inspectorName?: string;
   location?: string;
 }
@@ -454,10 +456,20 @@ export function saveScannedInspection(payload: SaveScannedPayload): {
     location: payload.location || "Mumbai Central Enforcement Zone",
     status: "completed",
     imageUrl: payload.imageUrl,
+    imageUrls: payload.imageUrls && payload.imageUrls.length > 0 ? payload.imageUrls : [payload.imageUrl],
     findings: payload.detections.map((d) => d.label),
     complianceScore: complianceScore,
     detections: payload.detections,
   };
+
+  // Cache individual panel images if multiple panels are present
+  if (payload.imageUrls && payload.imageUrls.length > 0) {
+    payload.imageUrls.forEach((panelUrl, pIdx) => {
+      if (panelUrl) {
+        setCachedImage(`${inspectionId}_panel_${pIdx}`, panelUrl);
+      }
+    });
+  }
 
   store.products.unshift(newProduct);
   store.inspections.unshift(newInspection);

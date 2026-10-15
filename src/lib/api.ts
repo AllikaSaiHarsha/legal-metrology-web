@@ -11,6 +11,8 @@ export interface Detection {
   category?: "Manufacture Date" | "Expire Date" | "Consumer Info" | "MRP" | "Net Weight" | string;
   box: BoundingBox;
   estimated_font_size_mm?: number;
+  panelLabel?: string;
+  panelIndex?: number;
 }
 
 export interface AnalysisResult {
@@ -21,6 +23,8 @@ export interface AnalysisResult {
   image_url?: string;
   product_name?: string;
   manufacturer?: string;
+  panelLabel?: string;
+  panelIndex?: number;
 }
 
 const API_BASE_URL =

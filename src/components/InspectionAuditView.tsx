@@ -18,6 +18,8 @@ import {
   Sparkles,
   CameraOff,
   ScanSearch,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -44,6 +46,12 @@ export default function InspectionAuditView({
   product,
   violations,
 }: InspectionAuditViewProps) {
+  const allPanelUrls: string[] =
+    inspection.imageUrls && inspection.imageUrls.length > 0
+      ? inspection.imageUrls
+      : [inspection.imageUrl].filter(Boolean);
+
+  const [activePanelIdx, setActivePanelIdx] = useState<number>(0);
   const [showBoxes, setShowBoxes] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredBox, setHoveredBox] = useState<any | null>(null);
@@ -52,25 +60,31 @@ export default function InspectionAuditView({
     height: 800,
   });
   const [displayImgUrl, setDisplayImgUrl] = useState<string>(
-    normalizeImageUrl(inspection.imageUrl || "")
+    normalizeImageUrl(allPanelUrls[0] || inspection.imageUrl || "")
   );
   const [imgLoadFailed, setImgLoadFailed] = useState<boolean>(false);
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDisplayImgUrl(normalizeImageUrl(inspection.imageUrl || ""));
+    const targetUrl = allPanelUrls[activePanelIdx] || inspection.imageUrl || "";
+    setDisplayImgUrl(normalizeImageUrl(targetUrl));
     setImgLoadFailed(false);
 
     if (inspection.id) {
-      getImageFromIDB(inspection.id).then((idbImg) => {
+      const cacheKey =
+        activePanelIdx === 0
+          ? inspection.id
+          : `${inspection.id}_panel_${activePanelIdx}`;
+
+      getImageFromIDB(cacheKey).then((idbImg) => {
         if (idbImg) {
           setDisplayImgUrl(idbImg);
           setImgLoadFailed(false);
         }
       });
     }
-  }, [inspection.id, inspection.imageUrl]);
+  }, [inspection.id, activePanelIdx, inspection.imageUrl, inspection.imageUrls]);
 
   const handleImgError = async () => {
     const match = displayImgUrl.match(/\/uploads\/([^\/\?#]+)$/);
@@ -145,7 +159,38 @@ export default function InspectionAuditView({
               </div>
 
               {/* Toolbar Controls */}
-              <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/60 rounded-xl p-1 shadow-lg">
+              <div className="flex items-center gap-2">
+                {allPanelUrls.length > 1 && (
+                  <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/60 rounded-xl px-2 py-1 shadow-lg">
+                    <button
+                      onClick={() =>
+                        setActivePanelIdx((prev) =>
+                          prev > 0 ? prev - 1 : allPanelUrls.length - 1
+                        )
+                      }
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      title="Previous Image (←)"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs font-semibold text-slate-200 px-1 font-mono">
+                      Image {activePanelIdx + 1} / {allPanelUrls.length}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setActivePanelIdx((prev) =>
+                          prev < allPanelUrls.length - 1 ? prev + 1 : 0
+                        )
+                      }
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      title="Next Image (→)"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/60 rounded-xl p-1 shadow-lg">
                 <button
                   onClick={() => setShowBoxes(!showBoxes)}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
@@ -194,12 +239,39 @@ export default function InspectionAuditView({
                 </span>
               </div>
             </div>
+          </div>
 
             {/* Main Stage: Image with Visual Bounding Boxes */}
             <div
               ref={imageContainerRef}
-              className="flex-1 overflow-auto p-6 flex items-center justify-center relative bg-gradient-to-b from-slate-950 via-slate-900/20 to-slate-950"
+              className="flex-1 overflow-auto p-6 flex items-center justify-center relative bg-gradient-to-b from-slate-950 via-slate-900/20 to-slate-950 group"
             >
+              {allPanelUrls.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setActivePanelIdx((prev) =>
+                        prev > 0 ? prev - 1 : allPanelUrls.length - 1
+                      )
+                    }
+                    className="absolute left-4 z-30 p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 shadow-xl opacity-60 group-hover:opacity-100 transition-opacity"
+                    title="Previous Image (←)"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setActivePanelIdx((prev) =>
+                        prev < allPanelUrls.length - 1 ? prev + 1 : 0
+                      )
+                    }
+                    className="absolute right-4 z-30 p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 shadow-xl opacity-60 group-hover:opacity-100 transition-opacity"
+                    title="Next Image (→)"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
               <div
                 style={{
                   transform: `scale(${zoomLevel})`,
@@ -228,7 +300,14 @@ export default function InspectionAuditView({
                     {/* Live Bounding Boxes on Real Image */}
                     {showBoxes &&
                       hasLiveDetections &&
-                      inspection.detections?.map((det: any, idx) => {
+                      inspection.detections
+                        ?.filter(
+                          (det: any) =>
+                            det.panelIndex === undefined ||
+                            det.panelIndex === activePanelIdx ||
+                            allPanelUrls.length === 1
+                        )
+                        .map((det: any, idx) => {
                         const boxX = det.boxX !== undefined ? det.boxX : (det.box?.x ?? 0);
                         const boxY = det.boxY !== undefined ? det.boxY : (det.box?.y ?? 0);
                         const boxW = det.boxWidth !== undefined ? det.boxWidth : (det.box?.width ?? 0);
